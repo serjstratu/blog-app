@@ -1,0 +1,22 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MainLayout from "../components/layout/MainLayout/MainLayout.tsx";
+import HomePage from "../pages/HomePage.tsx";
+import AboutPage from "../pages/AboutPage.tsx";
+import NotFoundPage from "../pages/NotFoundPage.tsx";
+
+const AppRouter = () => {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route element={<MainLayout />}>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                </Route>
+
+                <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+        </BrowserRouter>
+    );
+};
+
+export default AppRouter;
