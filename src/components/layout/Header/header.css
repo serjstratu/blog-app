@@ -32,3 +32,29 @@
 .header__nav a:hover {
     color: #111;
 }
+
+.header__auth {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header__auth button,
+.login-form button {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 5px;
+    background: #222;
+    color: #fff;
+    cursor: pointer;
+}
+
+.header__auth button:hover,
+.login-form button:hover {
+    background: #444;
+}
+
+.header__auth span {
+    font-size: 14px;
+    font-weight: 500;
+}
