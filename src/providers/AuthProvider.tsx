@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     });
 
-    const login = async (credentials: LoginRequest) => {
+    const login = async (credentials: LoginRequest): Promise<User> => {
         const response: LoginResponse = await authService.login(credentials);
 
         const newSession: AuthSession = {
@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
 
         setSession(newSession);
+        return response.user;
     };
 
     const logout = () => {

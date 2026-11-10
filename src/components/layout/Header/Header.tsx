@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import {Link, NavLink} from 'react-router-dom';
 import LoginModal from '../../../features/auth/components/LoginModal';
 import {useAuth} from "../../../providers/AuthProvider.tsx";
 import './header.css';
@@ -23,10 +23,10 @@ const Header = () => {
 
                     <div className="header__auth">
                         {user ? (
-                            <>
+                            <Link to={`/user/${user.id}`}>
                                 <span>{user.name}</span>
                                 <button onClick={logout}>Logout</button>
-                            </>
+                            </Link>
                         ) : (
                             <button onClick={() => setIsLoginOpen(true)}>
                                 Login

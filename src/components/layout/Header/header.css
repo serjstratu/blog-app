@@ -36,7 +36,18 @@
 .header__auth {
     display: flex;
     align-items: center;
+}
+
+.header__auth a {
+    text-decoration: none;
+    color: #111;
+    display: flex;
     gap: 16px;
+    align-items: center;
+}
+
+.header__auth a:hover {
+    text-decoration: underline;
 }
 
 .header__auth button,

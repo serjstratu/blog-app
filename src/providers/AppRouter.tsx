@@ -3,6 +3,7 @@ import MainLayout from "../components/layout/MainLayout/MainLayout.tsx";
 import HomePage from "../pages/HomePage.tsx";
 import AboutPage from "../pages/AboutPage.tsx";
 import NotFoundPage from "../pages/NotFoundPage.tsx";
+import UserPage from "../pages/UserPage.tsx";
 
 const AppRouter = () => {
     return (
@@ -11,6 +12,7 @@ const AppRouter = () => {
                 <Route element={<MainLayout />}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/about" element={<AboutPage />} />
+                    <Route path="/user/:id" element={<UserPage />} />
                 </Route>
 
                 <Route path="*" element={<NotFoundPage />} />

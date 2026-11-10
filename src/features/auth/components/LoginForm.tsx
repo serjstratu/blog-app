@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
@@ -14,6 +15,7 @@ interface LoginFormProps {
 
 const LoginForm = ({ onSuccess }: LoginFormProps) => {
     const { login } = useAuth();
+    const navigate = useNavigate();
     const [serverError, setServerError] = useState('');
 
     const {
@@ -28,8 +30,9 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
         setServerError('');
 
         try {
-            await login(data);
+            const user = await login(data);
             onSuccess();
+            navigate(`/user/${user.id}`);
         } catch (error) {
             setServerError(
                 error instanceof Error ? error.message : 'Something went wrong',
