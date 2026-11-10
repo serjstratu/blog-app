@@ -40,6 +40,23 @@
     text-transform: uppercase;
 }
 
+.user-profile__eyebrow svg {
+    margin-right: 5px;
+    color: #6366f1;
+}
+
+.user-profile__details dt {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.user-profile__details dt svg {
+    width: 16px;
+    color: #6366f1;
+    opacity: 0.85;
+}
+
 .user-profile__intro h1 { margin: 0; }
 .user-profile__username { margin: 8px 0 0; color: #64748b; }
 .user-profile__bio { margin: 28px 0; color: #334155; line-height: 1.6; }
