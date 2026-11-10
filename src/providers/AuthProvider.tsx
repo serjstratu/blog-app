@@ -1,6 +1,7 @@
 import {
     createContext,
     useContext,
+    useCallback,
     useState,
     type ReactNode,
 } from 'react';
@@ -10,6 +11,7 @@ import {authService} from "../features/auth/services/authService.ts";
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const SESSION_KEY = 'blog-app-session';
+const API_URL = 'http://127.0.0.1:8000/api';
 
 interface AuthSession {
     access_token: string;
@@ -58,11 +60,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(null);
     };
 
+    const updateUser = async (updates: Pick<User, 'name' | 'bio' | 'phone'>) => {
+        if (!session) throw new Error('You must be logged in to update your profile');
+        const response = await fetch(`${API_URL}/users/${session.user.id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                accept: '*/*',
+                Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(updates),
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || 'Could not update profile');
+        }
+        const result = await response.json();
+        const updatedUser = { ...session.user, ...result, ...updates };
+        const updatedSession = { ...session, user: updatedUser };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
+        setSession(updatedSession);
+    };
+
+    const refreshUser = useCallback(async (id: number): Promise<User> => {
+        const response = await fetch(`${API_URL}/users/${id}`, { headers: { accept: '*/*' } });
+        if (!response.ok) throw new Error('Could not load user profile');
+        const freshUser: User = await response.json();
+        if (session && freshUser.id === session.user.id) {
+            const updatedSession = { ...session, user: freshUser };
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
+            setSession(updatedSession);
+        }
+        return freshUser;
+    }, []);
+
+    const uploadAvatar = async (file: File) => {
+        if (!session) throw new Error('You must be logged in to update your avatar');
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${API_URL}/users/${session.user.id}/avatar`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}`, accept: '*/*' },
+            body: formData,
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || 'Could not upload avatar');
+        }
+        const result = await response.json().catch(() => null);
+        const avatar = typeof result === 'string' ? result : result?.avatar ?? result?.avatar_url ?? result?.url;
+        if (!avatar) throw new Error('Avatar uploaded, but the server did not return its URL');
+        const updatedSession = { ...session, user: { ...session.user, avatar } };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
+        setSession(updatedSession);
+    };
+
     const value: AuthContextType = {
         user: session?.user ?? null,
         isAuthenticated: !!session,
         login,
         logout,
+        updateUser,
+        uploadAvatar,
+        refreshUser,
     };
 
     return (

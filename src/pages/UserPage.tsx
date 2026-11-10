@@ -1,6 +1,9 @@
 
+import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { toast } from 'react-toastify';
 import {
     faEnvelope,
     faPhone,
@@ -9,6 +12,9 @@ import {
     faCalendarDays,
     faRotate,
     faUser,
+    faPenToSquare,
+    faFloppyDisk,
+    faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../providers/AuthProvider';
@@ -19,25 +25,87 @@ const formatDate = (value: string | null) =>
 
 const UserPage = () => {
     const { id } = useParams();
-    const { user } = useAuth();
+    const { user: currentUser, updateUser, uploadAvatar, refreshUser } = useAuth();
+    const [profile, setProfile] = useState(currentUser?.id === Number(id) ? currentUser : null);
+    const [loading, setLoading] = useState(true);
+    const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const requestedUserId = useRef<number | null>(null);
 
-    if (!user) return <Navigate to="/" replace />;
-    if (id !== String(user.id)) return <Navigate to={`/user/${user.id}`} replace />;
+    useEffect(() => {
+        const userId = Number(id);
+        if (!Number.isInteger(userId) || userId <= 0) {
+            setLoading(false);
+            return;
+        }
+        if (requestedUserId.current === userId) return;
+        requestedUserId.current = userId;
+        let active = true;
+        setLoading(true);
+        refreshUser(userId)
+            .then((freshUser) => { if (active) setProfile(freshUser); })
+            .catch((cause) => {
+                if (active) toast.error(cause instanceof Error ? cause.message : 'Could not load profile');
+            })
+            .finally(() => { if (active) setLoading(false); });
+        return () => { active = false; };
+    }, [id, refreshUser]);
+
+    useEffect(() => {
+        if (currentUser && currentUser.id === Number(id)) setProfile(currentUser);
+    }, [currentUser, id]);
+
+    if (loading && !profile) return <section className="user-profile">Loading profile…</section>;
+    if (!profile) return <Navigate to="/" replace />;
+    const user = profile;
 
     return (
         <section className="user-profile" aria-labelledby="user-profile-title">
             <div className="user-profile__intro">
-                {user.avatar ? (
-                    <img
-                        className="user-profile__avatar"
-                        src={user.avatar}
-                        alt={`${user.name}'s avatar`}
-                    />
-                ) : (
-                    <div className="user-profile__avatar user-profile__avatar--empty" aria-hidden="true">
-                        {user.name.charAt(0).toUpperCase()}
-                    </div>
-                )}
+                <div className="user-profile__avatar-wrap">
+                    {user.avatar ? (
+                        <img className="user-profile__avatar" src={`http://127.0.0.1:8000${user.avatar}`} alt={`${user.name}'s avatar`} />
+                    ) : (
+                        <div className="user-profile__avatar user-profile__avatar--empty" aria-hidden="true">
+                            {user.name.charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                    <label className="user-profile__avatar-button">
+                        {uploadingAvatar ? 'Uploading…' : 'Change avatar'}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            disabled={uploadingAvatar}
+                            onChange={async (event) => {
+                                const file = event.target.files?.[0];
+                                if (!file) return;
+                                
+                                if (!file.type.startsWith('image/')) {
+                                    toast.error('Please select an image.');
+                                    event.target.value = '';
+                                    return;
+                                }
+                                if (file.size > 5 * 1024 * 1024) {
+                                    toast.error('Image size must not exceed 5 MB.');
+                                    event.target.value = '';
+                                    return;
+                                }
+                                setUploadingAvatar(true);
+                                try {
+                                    await uploadAvatar(file);
+                                    toast.success('Avatar updated successfully.');
+                                } catch (cause) {
+                                    toast.error(cause instanceof Error ? cause.message : 'Image upload error');
+                                } finally {
+                                    setUploadingAvatar(false);
+                                    event.target.value = '';
+                                }
+                            }}
+                        />
+                    </label>
+                </div>
 
                 <div>
                     <p className="user-profile__eyebrow">
@@ -51,6 +119,40 @@ const UserPage = () => {
 
             {user.bio && (
                 <p className="user-profile__bio">{user.bio}</p>
+            )}
+
+            <button className={`user-profile__action ${editing ? 'user-profile__action--secondary' : 'user-profile__action--edit'}`} type="button" onClick={() => { setError(''); setEditing(!editing); }}>
+                <FontAwesomeIcon icon={editing ? faXmark : faPenToSquare} />
+                {editing ? 'Cancel editing' : 'Edit profile'}
+            </button>
+            {editing && (
+                <form className="user-profile__edit" onSubmit={async (event) => {
+                    event.preventDefault();
+                    const form = new FormData(event.currentTarget);
+                    setSaving(true);
+                    setError('');
+                    try {
+                        await updateUser({
+                            name: String(form.get('name')).trim(),
+                            bio: String(form.get('bio')).trim(),
+                            phone: String(form.get('phone')).trim() || null,
+                        });
+                        setEditing(false);
+                    } catch (cause) {
+                        setError(cause instanceof Error ? cause.message : 'Could not update profile');
+                    } finally {
+                        setSaving(false);
+                    }
+                }}>
+                    <label>Name<input name="name" defaultValue={user.name} required maxLength={100} /></label>
+                    <label>Bio<textarea name="bio" defaultValue={user.bio ?? ''} rows={4} maxLength={500} /></label>
+                    <label>Phone<input name="phone" type="tel" defaultValue={user.phone ?? ''} maxLength={30} /></label>
+                    {error && <p role="alert" className="user-profile__error">{error}</p>}
+                    <button className="user-profile__action user-profile__action--save" type="submit" disabled={saving}>
+                        <FontAwesomeIcon icon={faFloppyDisk} />
+                        {saving ? 'Saving…' : 'Save changes'}
+                    </button>
+                </form>
             )}
 
             <dl className="user-profile__details">

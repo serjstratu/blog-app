@@ -29,4 +29,7 @@ export interface AuthContextType {
     isAuthenticated: boolean;
     login: (credentials: LoginRequest) => Promise<User>;
     logout: () => void;
+    updateUser: (updates: Pick<User, 'name' | 'bio' | 'phone'>) => Promise<void>;
+    uploadAvatar: (file: File) => Promise<void>;
+    refreshUser: (id: number) => Promise<User>;
 }
