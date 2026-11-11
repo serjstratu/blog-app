@@ -7,12 +7,11 @@ import {
 } from 'react';
 import type {AuthContextType, LoginRequest, LoginResponse, User} from "../features/auth/types/auth.types.ts";
 import {authService} from "../features/auth/services/authService.ts";
+import { API_URL } from '../config/api';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const SESSION_KEY = 'blog-app-session';
-const API_URL = 'http://127.0.0.1:8000/api';
-
 interface AuthSession {
     access_token: string;
     expires_at: number;

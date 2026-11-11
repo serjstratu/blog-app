@@ -2,8 +2,7 @@ import type {
     LoginRequest,
     LoginResponse,
 } from '../types/auth.types';
-
-const API_URL = 'http://127.0.0.1:8000/api';
+import { API_URL } from '../../../config/api';
 
 export const authService = {
     async login(credentials: LoginRequest): Promise<LoginResponse> {

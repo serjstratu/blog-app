@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { API_URL } from '../config/api';
 import './blogPage.css';
 import type {Post} from "../types";
 
@@ -7,7 +8,7 @@ let postsRequest: Promise<Post[]> | null = null;
 
 const fetchPosts = () => {
     if (!postsRequest) {
-        postsRequest = fetch('http://127.0.0.1:8000/api/posts', { headers: { accept: '*/*' } })
+        postsRequest = fetch(`${API_URL}/posts?limit=20&offset=0`, { headers: { accept: '*/*' } })
             .then(async (response): Promise<Post[]> => {
                 if (!response.ok) throw new Error('Could not load blog posts');
                 return await response.json() as Promise<Post[]>;
@@ -26,7 +27,7 @@ const BlogPage = () => {
 
     useEffect(() => {
         fetchPosts()
-            .then((data) => setPosts(data))
+            .then((data: Post[]) => setPosts(data))
             .catch((error: unknown) => {
                 toast.error(error instanceof Error ? error.message : 'Could not load blog posts');
             })

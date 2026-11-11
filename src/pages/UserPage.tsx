@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toast } from 'react-toastify';
+import { API_ORIGIN } from '../config/api';
 import {
     faEnvelope,
     faPhone,
@@ -66,7 +67,7 @@ const UserPage = () => {
             <div className="user-profile__intro">
                 <div className="user-profile__avatar-wrap">
                     {user.avatar ? (
-                        <img className="user-profile__avatar" src={`http://127.0.0.1:8000${user.avatar}`} alt={`${user.name}'s avatar`} />
+                        <img className="user-profile__avatar" src={user.avatar.startsWith('http') ? user.avatar : `${API_ORIGIN}${user.avatar}`} alt={`${user.name}'s avatar`} />
                     ) : (
                         <div className="user-profile__avatar user-profile__avatar--empty" aria-hidden="true">
                             {user.name.charAt(0).toUpperCase()}
