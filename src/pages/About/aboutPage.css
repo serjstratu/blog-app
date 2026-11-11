@@ -1,0 +1,187 @@
+
+.about-page {
+    padding: 48px 0 72px;
+}
+
+.about-page__header {
+    max-width: 760px;
+    margin: 0 auto 48px;
+    text-align: center;
+}
+
+.about-page__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    color: #6366f1;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.about-page__header h1 {
+    margin: 0 0 20px;
+    color: #0f172a;
+    font-size: clamp(32px, 5vw, 46px);
+    line-height: 1.2;
+    letter-spacing: -0.04em;
+}
+
+.about-page__header h1 span {
+    color: #6366f1;
+}
+
+.about-page__header > p {
+    max-width: 650px;
+    margin: 0 auto;
+    color: #64748b;
+    font-size: 17px;
+    line-height: 1.8;
+}
+
+.about-page__content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.about-page__card {
+    padding: 28px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            border-color 0.2s ease;
+}
+
+.about-page__card:hover {
+    transform: translateY(-4px);
+    border-color: #c7d2fe;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.about-page__card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 20px;
+    color: #6366f1;
+    background: #eef2ff;
+    border-radius: 12px;
+    font-size: 20px;
+}
+
+.about-page__card h2 {
+    margin: 0 0 12px;
+    color: #1e293b;
+    font-size: 20px;
+    font-weight: 650;
+}
+
+.about-page__card p {
+    margin: 0;
+    color: #64748b;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.about-page__stack {
+    margin-top: 48px;
+    padding: 32px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+}
+
+.about-page__stack-header {
+    margin-bottom: 26px;
+    text-align: center;
+}
+
+.about-page__stack-header h2 {
+    margin: 0 0 8px;
+    color: #0f172a;
+    font-size: 24px;
+}
+
+.about-page__stack-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.about-page__technologies {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+}
+
+.about-page__technology {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px;
+    color: #334155;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    transition:
+            transform 0.2s ease,
+            border-color 0.2s ease;
+}
+
+.about-page__technology:hover {
+    transform: translateY(-3px);
+    border-color: #a5b4fc;
+}
+
+.about-page__technology svg {
+    font-size: 19px;
+}
+
+@media (max-width: 768px) {
+    .about-page {
+        padding: 32px 0 48px;
+    }
+
+    .about-page__header {
+        margin-bottom: 32px;
+    }
+
+    .about-page__content {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .about-page__card {
+        padding: 24px;
+    }
+
+    .about-page__stack {
+        margin-top: 32px;
+        padding: 24px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .about-page__header h1 {
+        font-size: 32px;
+    }
+
+    .about-page__header > p {
+        font-size: 15px;
+    }
+
+    .about-page__technology {
+        padding: 11px 14px;
+    }
+}
