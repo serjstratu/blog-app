@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 import { API_URL } from '../config/api';
 import './blogPage.css';
 import type {Post} from "../types";
@@ -53,7 +54,11 @@ const BlogPage = () => {
                                         {new Date(post.publishedAt ?? post.createdAt).toLocaleDateString()}
                                     </time>
                                 </div>
-                                <h2>{post.title}</h2>
+                                <h2>
+                                    <Link key={post.id} to={`/post/${post.id}`}>
+                                        {post.title}
+                                    </Link>
+                                </h2>
                                 <p>{post.excerpt || post.content}</p>
                                 {!!post.tags.length && <ul className="blog-card__tags">{post.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>}
                                 <div className="blog-card__stats">

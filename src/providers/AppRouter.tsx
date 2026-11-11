@@ -5,6 +5,7 @@ import AboutPage from "../pages/AboutPage.tsx";
 import NotFoundPage from "../pages/NotFoundPage.tsx";
 import UserPage from "../pages/UserPage.tsx";
 import BlogPage from "../pages/BlogPage.tsx";
+import PostPage from "../pages/PostPage.tsx";
 
 const AppRouter = () => {
     return (
@@ -14,6 +15,7 @@ const AppRouter = () => {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/blog" element={<BlogPage />} />
+                    <Route path="/post/:id" element={<PostPage />} />
                     <Route path="/user/:id" element={<UserPage />} />
                 </Route>
 
