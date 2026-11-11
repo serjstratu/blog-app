@@ -1,2 +1,1 @@
-npx oxlint .
-
+npx oxlint . && npm run test:coverage
