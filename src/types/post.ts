@@ -1,3 +1,10 @@
+import type {Pagination} from "./pagination.ts";
+
+export interface PostsResponse {
+    data: Post[];
+    pagination: Pagination;
+}
+
 export interface Post {
     id: number;
     title: string;
