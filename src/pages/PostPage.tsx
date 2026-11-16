@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_URL } from '../config/api';
+import { getJson } from '../config/getJson';
 import type { Post } from '../types';
+import Comments from '../components/Comments/Comments';
 import './postPage.css';
 
 const PostPage = () => {
@@ -18,11 +20,7 @@ const PostPage = () => {
         }
         let active = true;
         setLoading(true);
-        fetch(`${API_URL}/posts/${postId}`, { headers: { accept: '*/*' } })
-            .then(async (response) => {
-                if (!response.ok) throw new Error('Could not load this post');
-                return await response.json() as Post;
-            })
+        getJson<Post>(`${API_URL}/posts/${postId}`)
             .then((data) => { if (active) setPost(data); })
             .catch((error: unknown) => {
                 if (active) toast.error(error instanceof Error ? error.message : 'Could not load this post');
@@ -55,6 +53,7 @@ const PostPage = () => {
                     <span>{post.dislikes} dislikes</span>
                     <span>{post.commentsCount} comments</span>
                 </div>
+                <Comments postId={post.id} />
             </div>
         </article>
     );
