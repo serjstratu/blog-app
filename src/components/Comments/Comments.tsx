@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import { API_ORIGIN, API_URL } from '../../config/api';
 import { getJson } from '../../config/getJson';
 import Pagination from '../Pagination/Pagination';
-import { sortCommentsByCreatedAt } from "../../utils/utils.ts";
+import { sortCommentsByCreatedAt } from "../../utils";
 import type { Comment, CommentsResponse, Pagination as PaginationData } from '../../types';
 import './comments.css';
 const PAGE_SIZE = 20;
@@ -49,7 +50,7 @@ const Comments = ({ postId }: CommentsProps) => {
                 <article className="comment__card">
                     <div className="comment__author">
                         {avatar ? <img src={avatar.startsWith('http') ? avatar : `${API_ORIGIN}${avatar}`} alt="" /> : <span className="comment__avatar-placeholder">{name.charAt(0).toUpperCase()}</span>}
-                        <div><strong>{name}</strong><time dateTime={comment.createdAt}>{new Date(comment.createdAt).toLocaleString()}</time></div>
+                        <div><strong>{name}</strong><time dateTime={comment.createdAt}>{dayjs(comment.createdAt).format('DD.MM.YYYY HH:mm')}</time></div>
                     </div>
                     <p>{comment.deletedAt ? 'This comment was deleted.' : comment.content}</p>
                 </article>

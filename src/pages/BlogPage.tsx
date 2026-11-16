@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../config/api';
@@ -55,7 +56,7 @@ const BlogPage = () => {
                                     <div className="blog-card__meta">
                                         {post.isFeatured && <span className="blog-card__featured">Featured</span>}
                                         <time dateTime={post.publishedAt ?? post.createdAt}>
-                                            {new Date(post.publishedAt ?? post.createdAt).toLocaleDateString()}
+                                            {dayjs(post.publishedAt ?? post.createdAt).format('DD.MM.YYYY')}
                                         </time>
                                     </div>
                                     <h2><Link to={`/post/${post.id}`}>{post.title}</Link></h2>

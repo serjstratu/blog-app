@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRef } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
@@ -19,10 +18,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../providers/AuthProvider';
+import {formatDate} from "../utils";
 import './userPage.css';
-
-const formatDate = (value: string | null) =>
-    value ? new Date(value).toLocaleString() : '—';
 
 const UserPage = () => {
     const { id } = useParams();
