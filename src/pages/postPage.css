@@ -62,6 +62,31 @@
     color: #64748b;
     font-size: 13px;
 }
+.post-page__reactions {
+    display: inline-flex;
+    gap: 10px;
+}
+.post-page__reactions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 9px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    color: #475569;
+    background: #fff;
+    font: inherit;
+    cursor: pointer;
+}
+.post-page__reactions button:hover:not(:disabled) {
+    border-color: #6366f1;
+    color: #4338ca;
+    background: #eef2ff;
+}
+.post-page__reactions button:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
 @media (max-width: 600px) {
     .post-page {
         margin: 20px auto 40px;

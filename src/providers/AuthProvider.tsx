@@ -146,6 +146,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const reactToPost = async (postId: number, reaction: 'like' | 'dislike') => {
+        if (!session) throw new Error('You must be logged in to react to a post');
+        const response = await fetch(`${API_URL}/posts/${postId}/${reaction}`, {
+            method: 'POST',
+            headers: { accept: '*/*', Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || `Could not ${reaction} this post`);
+        }
+        return response.json() as Promise<{ postId: number; likes: number; dislikes: number }>;
+    };
+
     const value: AuthContextType = {
         user: session?.user ?? null,
         isAuthenticated: !!session,
@@ -156,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         refreshUser,
         createComment,
         deleteComment,
+        reactToPost,
     };
 
     return (

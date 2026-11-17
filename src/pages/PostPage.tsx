@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
+import { useAuth } from '../providers/AuthProvider';
 import { API_URL } from '../config/api';
 import { getJson } from '../config/getJson';
 import type { Post } from '../types';
@@ -12,6 +15,21 @@ const PostPage = () => {
     const { id } = useParams();
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
+    const [reacting, setReacting] = useState(false);
+    const { user, reactToPost } = useAuth();
+
+    const handleReaction = async (reaction: 'like' | 'dislike') => {
+        if (!post || reacting) return;
+        setReacting(true);
+        try {
+            const counts = await reactToPost(post.id, reaction);
+            setPost((current) => current ? { ...current, ...counts } : current);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : `Could not ${reaction} this post`);
+        } finally {
+            setReacting(false);
+        }
+    };
 
     useEffect(() => {
         const postId = Number(id);
@@ -50,8 +68,18 @@ const PostPage = () => {
                 <div className="post-page__body">{post.content}</div>
                 <div className="post-page__stats">
                     <span>{post.views.toLocaleString()} views</span>
-                    <span>{post.likes} likes</span>
-                    <span>{post.dislikes} dislikes</span>
+                    {user ? (
+                        <div className="post-page__reactions" aria-label="Post reactions">
+                            <button type="button" onClick={() => handleReaction('like')} disabled={reacting} aria-label="Like post">
+                                <FontAwesomeIcon icon={faThumbsUp} /> {post.likes}
+                            </button>
+                            <button type="button" onClick={() => handleReaction('dislike')} disabled={reacting} aria-label="Dislike post">
+                                <FontAwesomeIcon icon={faThumbsDown} /> {post.dislikes}
+                            </button>
+                        </div>
+                    ) : (
+                        <><span>{post.likes} likes</span><span>{post.dislikes} dislikes</span></>
+                    )}
                     <span>{post.commentsCount} comments</span>
                 </div>
                 <Comments postId={post.id} />
