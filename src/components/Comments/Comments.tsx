@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import {useEffect, useState, type FormEvent, type ReactNode, useRef} from 'react';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -23,8 +23,11 @@ const Comments = ({ postId }: CommentsProps) => {
     const [content, setContent] = useState('');
     const [sending, setSending] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
     const { user, createComment, deleteComment } = useAuth();
     const [deletingId, setDeletingId] = useState<number | null>(null);
+
+    const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         let active = true;
@@ -54,11 +57,12 @@ const Comments = ({ postId }: CommentsProps) => {
         if (!trimmedContent) return;
         setSending(true);
         try {
-            await createComment(postId, trimmedContent);
+            await createComment(postId, trimmedContent, replyingTo?.id ?? null);
             setContent('');
-            setPage(1);
+            if (!replyingTo) setPage(1);
+            setReplyingTo(null);
             setRefreshKey((current) => current + 1);
-            toast.success('Comment added.');
+            toast.success(replyingTo ? 'Reply added.' : 'Comment added.');
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Could not add comment');
         } finally {
@@ -121,6 +125,18 @@ const Comments = ({ postId }: CommentsProps) => {
                         )}
                     </div>
                     <p>{comment.deletedAt ? 'This comment was deleted.' : comment.content}</p>
+                    {user && !comment.deletedAt && (
+                        <button
+                            className="comment__reply"
+                            type="button"
+                            onClick={() => {
+                                setReplyingTo(comment);
+                                commentInputRef.current?.focus();
+                            }}
+                        >
+                            Reply
+                        </button>
+                    )}
                 </article>
                 {!!comment.replies?.length && (
                     <ul className="comments__replies">
@@ -136,18 +152,25 @@ const Comments = ({ postId }: CommentsProps) => {
             <h2 id="comments-title">Comments{pagination ? ` (${pagination.totalItems})` : ''}</h2>
             {user ? (
                 <form className="comments__form" onSubmit={handleSubmit}>
-                    <label htmlFor="new-comment">Write a comment</label>
+                    {replyingTo && (
+                        <div className="comments__replying">
+                            <span>Replying to comment by User {replyingTo.authorId}</span>
+                            <button type="button" onClick={() => setReplyingTo(null)}>Cancel reply</button>
+                        </div>
+                    )}
+                    <label htmlFor="new-comment">{replyingTo ? 'Write a reply' : 'Write a comment'}</label>
                     <textarea
                         id="new-comment"
+                        ref={commentInputRef}
                         value={content}
                         onChange={(event) => setContent(event.target.value)}
-                        placeholder="Share your thoughts…"
+                        placeholder={replyingTo ? 'Write your reply…' : 'Share your thoughts…'}
                         rows={4}
                         maxLength={5000}
                         required
                     />
                     <button type="submit" disabled={sending || !content.trim()}>
-                        {sending ? 'Posting…' : 'Post comment'}
+                        {sending ? 'Posting…' : replyingTo ? 'Post reply' : 'Post comment'}
                     </button>
                 </form>
             ) : <p className="comments__status">Log in to leave a comment.</p>}

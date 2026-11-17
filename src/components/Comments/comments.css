@@ -54,6 +54,36 @@
     opacity: 0.55;
     cursor: not-allowed;
 }
+.comments__replying {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-left: 3px solid #6366f1;
+    border-radius: 6px;
+    color: #475569;
+    background: #eef2ff;
+    font-size: 13px;
+}
+.comments__replying button,
+.comment__reply {
+    padding: 0;
+    border: 0;
+    color: #4f46e5;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.comments__replying button:hover,
+.comment__reply:hover {
+    text-decoration: underline;
+}
+.comment__reply {
+    margin-top: 10px;
+}
 .comments__list,
 .comments__replies {
     display: grid;
