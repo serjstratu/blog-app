@@ -11,6 +11,49 @@
 .comments__status {
     color: #64748b;
 }
+.comments__form {
+    display: grid;
+    gap: 10px;
+    margin: 0 0 24px;
+}
+.comments__form label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+.comments__form textarea {
+    width: 100%;
+    resize: vertical;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    color: #0f172a;
+    font: inherit;
+    line-height: 1.5;
+}
+.comments__form textarea:focus {
+    border-color: #6366f1;
+    outline: 3px solid rgb(99 102 241 / 16%);
+}
+.comments__form button {
+    justify-self: end;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 9px;
+    color: white;
+    background: #4f46e5;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.comments__form button:hover:not(:disabled) {
+    background: #4338ca;
+}
+.comments__form button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
 .comments__list,
 .comments__replies {
     display: grid;

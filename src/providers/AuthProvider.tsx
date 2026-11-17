@@ -5,9 +5,10 @@ import {
     useState,
     type ReactNode,
 } from 'react';
-import type {AuthContextType, LoginRequest, LoginResponse, User} from "../features/auth/types/auth.types.ts";
+import type {AuthContextType, LoginRequest, LoginResponse} from "../features/auth/types/auth.types.ts";
 import {authService} from "../features/auth/services/authService.ts";
 import { API_URL } from '../config/api';
+import type {Comment, User} from '../types';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -114,6 +115,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(updatedSession);
     };
 
+    const createComment = async (postId: number, content: string, parentId: number | null = null): Promise<Comment> => {
+        if (!session) throw new Error('You must be logged in to comment');
+        const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                accept: '*/*',
+                Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ content, parentId }),
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || 'Could not add comment');
+        }
+        return response.json() as Promise<Comment>;
+    };
+
     const value: AuthContextType = {
         user: session?.user ?? null,
         isAuthenticated: !!session,
@@ -122,6 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateUser,
         uploadAvatar,
         refreshUser,
+        createComment,
     };
 
     return (

@@ -1,20 +1,8 @@
+import type {Comment, User} from '../../../types';
+
 export interface LoginRequest {
     login: string;
     password: string;
-}
-
-export interface User {
-    id: number;
-    name: string;
-    username: string;
-    email: string;
-    avatar?: string | null;
-    bio?: string | null;
-    phone: string | null;
-    roles: string[];
-    last_login: string | null;
-    created_at: string;
-    updated_at: string;
 }
 
 export interface LoginResponse {
@@ -32,4 +20,5 @@ export interface AuthContextType {
     updateUser: (updates: Pick<User, 'name' | 'bio' | 'phone'>) => Promise<void>;
     uploadAvatar: (file: File) => Promise<void>;
     refreshUser: (id: number) => Promise<User>;
+    createComment: (postId: number, content: string, parentId?: number | null) => Promise<Comment>;
 }

@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import { API_ORIGIN, API_URL } from '../../config/api';
 import { getJson } from '../../config/getJson';
 import Pagination from '../Pagination/Pagination';
 import { sortCommentsByCreatedAt } from "../../utils";
+import { useAuth } from '../../providers/AuthProvider';
 import type { Comment, CommentsResponse, Pagination as PaginationData } from '../../types';
 import './comments.css';
 const PAGE_SIZE = 20;
@@ -18,6 +19,10 @@ const Comments = ({ postId }: CommentsProps) => {
     const [pagination, setPagination] = useState<PaginationData | null>(null);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [content, setContent] = useState('');
+    const [sending, setSending] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const { user, createComment } = useAuth();
 
     useEffect(() => {
         let active = true;
@@ -39,7 +44,25 @@ const Comments = ({ postId }: CommentsProps) => {
             })
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
-    }, [postId, page]);
+    }, [postId, page, refreshKey]);
+
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const trimmedContent = content.trim();
+        if (!trimmedContent) return;
+        setSending(true);
+        try {
+            await createComment(postId, trimmedContent);
+            setContent('');
+            setPage(1);
+            setRefreshKey((current) => current + 1);
+            toast.success('Comment added.');
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Could not add comment');
+        } finally {
+            setSending(false);
+        }
+    };
 
     const renderComment = (comment: Comment, depth = 0): ReactNode => {
         const author = comment.author ?? comment.user;
@@ -66,6 +89,23 @@ const Comments = ({ postId }: CommentsProps) => {
     return (
         <section className="comments" aria-labelledby="comments-title">
             <h2 id="comments-title">Comments{pagination ? ` (${pagination.totalItems})` : ''}</h2>
+            {user ? (
+                <form className="comments__form" onSubmit={handleSubmit}>
+                    <label htmlFor="new-comment">Write a comment</label>
+                    <textarea
+                        id="new-comment"
+                        value={content}
+                        onChange={(event) => setContent(event.target.value)}
+                        placeholder="Share your thoughts…"
+                        rows={4}
+                        maxLength={5000}
+                        required
+                    />
+                    <button type="submit" disabled={sending || !content.trim()}>
+                        {sending ? 'Posting…' : 'Post comment'}
+                    </button>
+                </form>
+            ) : <p className="comments__status">Log in to leave a comment.</p>}
             {loading ? <p className="comments__status">Loading comments…</p> : comments.length === 0 ? (
                 <p className="comments__status">No comments yet.</p>
             ) : <ul className="comments__list">{sortCommentsByCreatedAt(comments).map((comment) => renderComment(comment))}</ul>}
