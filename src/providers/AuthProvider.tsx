@@ -133,6 +133,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return response.json() as Promise<Comment>;
     };
 
+    const deleteComment = async (commentId: number): Promise<void> => {
+        if (!session) throw new Error('You must be logged in to delete comments');
+        if (!session.user.roles.includes('admin')) throw new Error('Only administrators can delete comments');
+        const response = await fetch(`${API_URL}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: { accept: '*/*', Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || 'Could not delete comment');
+        }
+    };
+
     const value: AuthContextType = {
         user: session?.user ?? null,
         isAuthenticated: !!session,
@@ -142,6 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         uploadAvatar,
         refreshUser,
         createComment,
+        deleteComment,
     };
 
     return (

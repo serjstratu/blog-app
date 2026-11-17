@@ -93,6 +93,25 @@
     color: #0f172a;
     font-size: 14px;
 }
+.comment__delete {
+    margin-left: auto;
+    padding: 6px 10px;
+    border: 1px solid #fecaca;
+    border-radius: 7px;
+    color: #b91c1c;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.comment__delete:hover:not(:disabled) {
+    background: #fef2f2;
+}
+.comment__delete:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
 .comment__author time {
     display: block;
     margin-top: 3px;

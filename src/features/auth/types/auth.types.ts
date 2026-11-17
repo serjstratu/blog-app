@@ -21,4 +21,5 @@ export interface AuthContextType {
     uploadAvatar: (file: File) => Promise<void>;
     refreshUser: (id: number) => Promise<User>;
     createComment: (postId: number, content: string, parentId?: number | null) => Promise<Comment>;
+    deleteComment: (commentId: number) => Promise<void>;
 }
