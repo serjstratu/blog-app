@@ -1,4 +1,16 @@
-import type {Comment, User} from '../../../types';
+import type {Comment, Post, User} from '../../../types';
+
+export interface CreatePostInput {
+    title: string;
+    slug: string;
+    content: string;
+    excerpt: string;
+    image: string;
+    status: 'draft' | 'published';
+    categoryId: number | null;
+    tags: string[];
+    isFeatured: boolean;
+}
 
 export interface LoginRequest {
     login: string;
@@ -30,4 +42,5 @@ export interface AuthContextType {
     createComment: (postId: number, content: string, parentId?: number | null) => Promise<Comment>;
     deleteComment: (commentId: number) => Promise<void>;
     reactToPost: (postId: number, reaction: 'like' | 'dislike') => Promise<{ likes: number; dislikes: number }>;
+    createPost: (input: CreatePostInput) => Promise<Post>;
 }

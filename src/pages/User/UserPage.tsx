@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRef } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toast } from 'react-toastify';
-import { API_ORIGIN } from '../config/api';
+import { API_ORIGIN } from '../../config/api.ts';
 import {
     faEnvelope,
     faPhone,
@@ -17,8 +17,8 @@ import {
     faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { useAuth } from '../providers/AuthProvider';
-import {formatDate} from "../utils";
+import { useAuth } from '../../providers/AuthProvider.tsx';
+import {formatDate} from "../../utils";
 import './userPage.css';
 
 const UserPage = () => {
@@ -117,6 +117,13 @@ const UserPage = () => {
 
             {user.bio && (
                 <p className="user-profile__bio">{user.bio}</p>
+            )}
+
+            {currentUser?.roles.some((role) => ['admin', 'editor'].includes(role.toLowerCase())) && (
+                <Link className="user-profile__action user-profile__action--edit" to="/add/">
+                    <FontAwesomeIcon icon={faFloppyDisk} />
+                    Create post
+                </Link>
             )}
 
             <button className={`user-profile__action ${editing ? 'user-profile__action--secondary' : 'user-profile__action--edit'}`} type="button" onClick={() => { setError(''); setEditing(!editing); }}>

@@ -6,7 +6,7 @@ import {
     useState,
     type ReactNode,
 } from 'react';
-import type {AuthContextType, LoginRequest, LoginResponse} from "../features/auth/types/auth.types.ts";
+import type {AuthContextType, CreatePostInput, LoginRequest, LoginResponse} from "../features/auth/types/auth.types.ts";
 import {authService} from "../features/auth/services/authService.ts";
 import { API_URL } from '../config/api';
 import type {Comment, User} from '../types';
@@ -198,6 +198,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return response.json() as Promise<{ postId: number; likes: number; dislikes: number }>;
     };
 
+    const createPost = async (input: CreatePostInput): Promise<import('../types').Post> => {
+        if (!session) throw new Error('You must be logged in to create posts');
+        if (!session.user.roles.some((role) => ['admin', 'editor'].includes(role.toLowerCase()))) {
+            throw new Error('Only editors and administrators can create posts');
+        }
+        const response = await fetch(`${API_URL}/posts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                accept: '*/*',
+                Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(input),
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || 'Could not create post');
+        }
+        return response.json() as Promise<import('../types').Post>;
+    };
+
     const value: AuthContextType = {
         user: session?.user ?? null,
         isAuthenticated: !!session,
@@ -209,6 +230,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         createComment,
         deleteComment,
         reactToPost,
+        createPost,
     };
 
     return (
