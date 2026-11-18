@@ -90,9 +90,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return response.user;
     };
 
-    const logout = () => {
-        sessionStorage.removeItem(SESSION_KEY);
-        setSession(null);
+    const logout = async () => {
+        try {
+            await authService.logout();
+        } finally {
+            sessionStorage.removeItem(SESSION_KEY);
+            setSession(null);
+        }
     };
 
     const updateUser = async (updates: Pick<User, 'name' | 'bio' | 'phone'>) => {

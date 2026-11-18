@@ -38,4 +38,13 @@ export const authService = {
         }
         return refreshRequest;
     },
+
+    async logout(): Promise<void> {
+        const response = await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: { accept: '*/*' },
+            credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Could not log out from the server');
+    },
 };
