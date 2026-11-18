@@ -1,12 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from "../components/layout/MainLayout/MainLayout.tsx";
+import {AboutPage, AddPost, Blog, NotFound, Post, UserPage} from "../pages";
 import HomePage from "../pages/Home/HomePage.tsx";
-import NotFoundPage from "../pages/NotFound/NotFoundPage.tsx";
-import UserPage from "../pages/User/UserPage.tsx";
-import BlogPage from "../pages/BlogPage.tsx";
-import PostPage from "../pages/PostPage.tsx";
-import { AboutPage } from "../pages";
-import AddPost from "../pages/AddPost/AddPost.tsx";
 
 const AppRouter = () => {
     return (
@@ -15,13 +10,13 @@ const AppRouter = () => {
                 <Route element={<MainLayout />}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/about" element={<AboutPage />} />
-                    <Route path="/blog" element={<BlogPage />} />
-                    <Route path="/post/:id" element={<PostPage />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/post/:id" element={<Post />} />
                     <Route path="/user/:id" element={<UserPage />} />
                     <Route path="/add/" element={<AddPost />} />
                 </Route>
 
-                <Route path="*" element={<NotFoundPage />} />
+                <Route path="*" element={<NotFound />} />
             </Routes>
         </BrowserRouter>
     );

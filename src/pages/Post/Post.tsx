@@ -4,14 +4,14 @@ import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
-import { useAuth } from '../providers/AuthProvider';
-import { API_URL } from '../config/api';
-import { getJson } from '../config/getJson';
-import type { Post } from '../types';
-import Comments from '../components/Comments/Comments';
-import './postPage.css';
+import { useAuth } from '../../providers/AuthProvider.tsx';
+import { API_URL } from '../../config/api.ts';
+import { getJson } from '../../config/getJson.ts';
+import type { Post } from '../../types';
+import Comments from '../../components/Comments/Comments.tsx';
+import './post.css';
 
-const PostPage = () => {
+const Post = () => {
     const { id } = useParams();
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
@@ -88,4 +88,4 @@ const PostPage = () => {
     );
 };
 
-export default PostPage;
+export default Post;

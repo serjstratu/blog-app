@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
-import { API_URL } from '../config/api';
-import Pagination from '../components/Pagination/Pagination';
-import './blogPage.css';
-import type {Pagination as PaginationType, Post, PostsResponse} from '../types';
+import { API_URL } from '../../config/api.ts';
+import Pagination from '../../components/Pagination/Pagination.tsx';
+import type {Pagination as PaginationType, Post, PostsResponse} from '../../types';
+import './blog.css';
 
 const PER_PAGE = 20;
 
-const BlogPage = () => {
+const Blog = () => {
     const [posts, setPosts] = useState<Post[]>([]);
     const [pagination, setPagination] = useState<PaginationType | null>(null);
     const [page, setPage] = useState(1);
@@ -87,4 +87,4 @@ const BlogPage = () => {
     );
 };
 
-export default BlogPage;
+export default Blog;
