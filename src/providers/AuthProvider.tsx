@@ -2,6 +2,7 @@ import {
     createContext,
     useContext,
     useCallback,
+    useEffect,
     useState,
     type ReactNode,
 } from 'react';
@@ -28,17 +29,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const parsedSession: AuthSession = JSON.parse(storedSession);
 
-            if (parsedSession.expires_at <= Date.now()) {
-                sessionStorage.removeItem(SESSION_KEY);
-                return null;
-            }
-
             return parsedSession;
         } catch {
             sessionStorage.removeItem(SESSION_KEY);
             return null;
         }
     });
+
+    useEffect(() => {
+        if (!session) return;
+        let active = true;
+        let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+        const refreshDelay = Math.max(0, session.expires_at - Date.now() - 60_000);
+        const refreshTimer = setTimeout(() => {
+            authService.refresh()
+            .then((refreshed) => {
+                if (!active) return;
+                const updatedSession: AuthSession = {
+                    ...session,
+                    access_token: refreshed.access_token,
+                    expires_at: Date.now() + refreshed.expires_in * 1000,
+                    user: refreshed.user ?? session.user,
+                };
+                sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
+                setSession(updatedSession);
+            })
+            .catch(() => {
+                if (!active) return;
+                const remainingTime = session.expires_at - Date.now();
+                if (remainingTime <= 0) {
+                    sessionStorage.removeItem(SESSION_KEY);
+                    setSession(null);
+                    return;
+                }
+                expiryTimer = setTimeout(() => {
+                    sessionStorage.removeItem(SESSION_KEY);
+                    setSession(null);
+                }, remainingTime);
+            });
+        }, refreshDelay);
+        return () => {
+            active = false;
+            clearTimeout(refreshTimer);
+            if (expiryTimer) clearTimeout(expiryTimer);
+        };
+    }, [session]);
 
     const login = async (credentials: LoginRequest): Promise<User> => {
         const response: LoginResponse = await authService.login(credentials);

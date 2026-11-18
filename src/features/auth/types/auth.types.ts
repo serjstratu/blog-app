@@ -12,6 +12,13 @@ export interface LoginResponse {
     user: User;
 }
 
+export interface RefreshResponse {
+    access_token: string;
+    token_type?: string;
+    expires_in: number;
+    user?: User;
+}
+
 export interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;

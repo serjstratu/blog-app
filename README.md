@@ -46,7 +46,7 @@ The backend runs separately from this frontend repository. Use the companion [bl
 
 ### 1. Start the backend
 
-Clone and run the API by following the setup instructions in the [backend repository](https://github.com/serjstratu/blog-api-python). The frontend expects it at `http://127.0.0.1:8000` by default.
+Clone and run the API by following the setup instructions in the [backend repository](https://github.com/serjstratu/blog-api-python). The frontend expects it at `http://localhost:8000` by default. Use `localhost` consistently for both frontend and API URLs so the browser sends the refresh cookie.
 
 ### 2. Start the frontend
 
@@ -59,7 +59,7 @@ npm install
 Create a local `.env` file in the project root:
 
 ```env
-VITE_API_URL=http://127.0.0.1:8000/api
+VITE_API_URL=http://localhost:8000/api
 ```
 
 `VITE_API_URL` is the API base URL, including the `/api` prefix. The same setting is used for API calls and to resolve relative avatar paths. The application defaults to the URL above if the variable is omitted.
