@@ -14,6 +14,7 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/test/**',
+        'src/types/**',
         '**/*.types.ts',
         '**/*.d.ts',
         '**/index.ts',

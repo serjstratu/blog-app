@@ -1,3 +1,3 @@
-export { sortCommentsByCreatedAt } from './sortComments.ts';
+export { sortCommentsByCreatedAt } from './СommentsUtils.ts';
 export { formatDate } from './dateUtils';
 export { slugify } from './postUtils.ts';
