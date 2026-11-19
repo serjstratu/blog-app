@@ -7,8 +7,15 @@ The project is evolving as new features and experiments are added.
 ## Features
 
 - Browse the latest published posts at `/blog`.
+- Navigate through paginated post listings.
 - Open a post detail page at `/post/:id`.
-- Log in using an email or username and password.
+- Like or dislike posts when logged in.
+- Read paginated comments and threaded replies as a guest or logged-in user.
+- Add comments and replies when logged in.
+- Delete comments as an administrator.
+- Create posts as a user with the `admin` or `editor` role at `/add/`.
+- Save a new post as a draft or publish it, with optional category, tags, cover image, excerpt, and featured flag.
+- Log in using an email or username and password, with cookie-based refresh and logout.
 - View a user profile at `/user/:id`, including avatar and account details.
 - Edit the profile name, bio, and phone number.
 - Upload an avatar image.
@@ -24,6 +31,8 @@ The project is evolving as new features and experiments are added.
 - React Router 7
 - React Hook Form and Yup for login form handling and validation
 - React Toastify for notifications
+- Day.js for date formatting and sorting
+- SweetAlert2 for destructive-action confirmation dialogs
 - Font Awesome icons
 - Vitest, Testing Library, and jsdom for tests
 - Oxlint for linting
@@ -93,6 +102,7 @@ Vite prints the local frontend URL in the terminal (typically `http://localhost:
 | `/blog` | List of recent posts |
 | `/post/:id` | Post details loaded from the API |
 | `/user/:id` | User profile and profile editing |
+| `/add/` | Create a post (admin/editor roles only) |
 
 ## API endpoints used
 
@@ -101,24 +111,33 @@ The frontend currently calls these endpoints relative to `VITE_API_URL`:
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `POST` | `/auth/login` | Authenticate a user |
+| `POST` | `/auth/refresh` | Refresh the access token using the HttpOnly refresh cookie |
+| `POST` | `/auth/logout` | Clear the refresh cookie and log out |
 | `GET` | `/posts?limit=20&offset=0` | Load the blog listing |
 | `GET` | `/posts/{id}` | Load an individual post |
+| `POST` | `/posts` | Create a post (admin/editor roles) |
+| `POST` | `/posts/{id}/like` | Like a post |
+| `POST` | `/posts/{id}/dislike` | Dislike a post |
+| `GET` | `/comments?postId={id}&limit=20&offset=0` | Load paginated comments and nested replies |
+| `POST` | `/posts/{id}/comments` | Add a comment or reply (`parentId` is optional/null) |
+| `DELETE` | `/comments/{id}` | Delete a comment (admin role) |
 | `GET` | `/users/{id}` | Load and refresh a user profile |
 | `PATCH` | `/users/{id}` | Update profile name, bio, and phone |
 | `POST` | `/users/{id}/avatar` | Upload a profile avatar as multipart form data (`file`) |
 
-Login credentials and the access token are managed by the auth provider. The current session is stored in browser `sessionStorage` and expires according to the API response.
+The auth provider manages the access token and user session in browser `sessionStorage`. Login, refresh, and logout requests include browser credentials so the backend can set, rotate, and clear the HttpOnly refresh-token cookie. Use the same hostname (`localhost`) for the frontend and API during local development; mixing `localhost` and `127.0.0.1` prevents the browser from sending the cookie as expected. The API must enable credentialed CORS for the frontend origin.
 
 ## Project structure
 
 ```text
 src/
-├── components/layout/   # Shared header, footer, and page layout
-├── config/              # API configuration
-├── features/auth/       # Login form, validation, service, and types
-├── pages/               # Route-level pages and their styles
+├── components/          # Shared layout, comments, and pagination UI
+├── config/              # API configuration and shared fetch helpers
+├── features/auth/       # Login form, validation, and auth service
+├── pages/               # Route pages and page-specific components/styles
 ├── providers/            # App router and authentication context
-└── types/                # Shared API data types
+├── types/                # Shared API and auth data types
+└── utils/                # Date formatting and sorting helpers
 ```
 
 ## Project goal
