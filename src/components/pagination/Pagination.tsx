@@ -1,4 +1,3 @@
-
 import './pagination.css';
 
 interface PaginationProps {

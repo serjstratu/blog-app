@@ -3,8 +3,8 @@ import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import { Link, useSearchParams } from 'react-router-dom';
 import { API_URL } from '../../config';
-import Pagination from '../../components/Pagination/Pagination.tsx';
 import type {Pagination as PaginationType, Post, PostsResponse} from '../../types';
+import { Loader, Pagination } from "../../components";
 import './blog.css';
 
 const PER_PAGE = 20;
@@ -53,7 +53,7 @@ const Blog = () => {
                 <p>Ideas, guides, and stories from our community.</p>
             </header>
             {tagFilter && <p className="blog-tag-search__active">Filtered by tag: <strong>{tagFilter}</strong> <Link to="/blog">Clear</Link></p>}
-            {loading ? <p>Loading posts…</p> : posts.length === 0 ? <p>No posts found{tagFilter ? ` with the tag “${tagFilter}”` : ''}.</p> : (
+            {loading ? <Loader size='large' label="Loading posts" /> : posts.length === 0 ? <p>No posts found{tagFilter ? ` with the tag “${tagFilter}”` : ''}.</p> : (
                 <>
                     <div className="blog-grid">
                         {posts.map((post) => (

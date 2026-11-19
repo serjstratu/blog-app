@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toast } from 'react-toastify';
@@ -16,6 +16,7 @@ import {
 import {UserAvatar, UserProfileForm} from "./components";
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import {formatDate} from "../../utils";
+import Loader from '../../components/loader/Loader.tsx';
 import './userPage.css';
 
 
@@ -26,16 +27,12 @@ const UserPage = () => {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
 
-    const requestedUserId = useRef<number | null>(null);
-
     useEffect(() => {
         const userId = Number(id);
         if (!Number.isInteger(userId) || userId <= 0) {
             setLoading(false);
             return;
         }
-        if (requestedUserId.current === userId) return;
-        requestedUserId.current = userId;
         let active = true;
         setLoading(true);
         refreshUser(userId)
@@ -51,7 +48,7 @@ const UserPage = () => {
         if (currentUser && currentUser.id === Number(id)) setProfile(currentUser);
     }, [currentUser, id]);
 
-    if (loading && !profile) return <section className="user-profile">Loading profile…</section>;
+    if (loading) return <section className="user-profile"><Loader label="Loading profile" /></section>;
     if (!profile) return <Navigate to="/" replace />;
     const user = profile;
 

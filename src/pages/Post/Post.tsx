@@ -3,12 +3,12 @@ import dayjs from 'dayjs';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider.tsx';
-import { API_URL } from '../../config/api.ts';
+import { API_URL } from '../../config';
 import { getJson } from '../../config/getJson.ts';
 import type { Post } from '../../types';
-import Comments from '../../components/Comments/Comments.tsx';
 import './post.css';
 import PostStats from "./component/PostStats/PostStats.tsx";
+import {Comments} from "../../components";
 
 const Post = () => {
     const { id } = useParams();

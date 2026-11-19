@@ -2,9 +2,10 @@ import {useEffect, useState, type FormEvent, type ReactNode, useRef} from 'react
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import { API_ORIGIN, API_URL } from '../../config/api';
+import { API_ORIGIN, API_URL } from '../../config';
 import { getJson } from '../../config/getJson';
-import Pagination from '../Pagination/Pagination';
+import Pagination from '../pagination/Pagination.tsx';
+import Loader from '../loader/Loader';
 import { sortCommentsByCreatedAt } from "../../utils";
 import { useAuth } from '../../providers/AuthProvider';
 import type { Comment, CommentsResponse, Pagination as PaginationData } from '../../types';
@@ -174,7 +175,7 @@ const Comments = ({ postId }: CommentsProps) => {
                     </button>
                 </form>
             ) : <p className="comments__status">Log in to leave a comment.</p>}
-            {loading ? <p className="comments__status">Loading comments…</p> : comments.length === 0 ? (
+            {loading ? <Loader label="Loading comments" /> : comments.length === 0 ? (
                 <p className="comments__status">No comments yet.</p>
             ) : <ul className="comments__list">{sortCommentsByCreatedAt(comments).map((comment) => renderComment(comment))}</ul>}
             {pagination && pagination.totalPages > 1 && (
