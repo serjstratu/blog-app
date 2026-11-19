@@ -1,4 +1,4 @@
-import type {Comment, Post, User} from '../../../types';
+import type {Comment, Post, User} from './index.ts';
 
 export interface CreatePostInput {
     title: string;

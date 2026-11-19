@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../providers/AuthProvider.tsx';
-import type { CreatePostInput } from '../../features/auth/types/auth.types.ts';
+import type { CreatePostInput } from '../../types';
 import {slugify} from "../../utils";
 import './addPost.css';
 

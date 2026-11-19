@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toast } from 'react-toastify';
-import { API_ORIGIN } from '../../config/api.ts';
 import {
     faEnvelope,
     faPhone,
@@ -11,15 +9,15 @@ import {
     faClock,
     faCalendarDays,
     faRotate,
-    faUser,
     faPenToSquare,
     faFloppyDisk,
     faXmark,
 } from '@fortawesome/free-solid-svg-icons';
-
+import {UserAvatar, UserProfileForm} from "./components";
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import {formatDate} from "../../utils";
 import './userPage.css';
+
 
 const UserPage = () => {
     const { id } = useParams();
@@ -27,9 +25,7 @@ const UserPage = () => {
     const [profile, setProfile] = useState(currentUser?.id === Number(id) ? currentUser : null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
     const requestedUserId = useRef<number | null>(null);
 
     useEffect(() => {
@@ -61,60 +57,11 @@ const UserPage = () => {
 
     return (
         <section className="user-profile" aria-labelledby="user-profile-title">
-            <div className="user-profile__intro">
-                <div className="user-profile__avatar-wrap">
-                    {user.avatar ? (
-                        <img className="user-profile__avatar" src={user.avatar.startsWith('http') ? user.avatar : `${API_ORIGIN}${user.avatar}`} alt={`${user.name}'s avatar`} />
-                    ) : (
-                        <div className="user-profile__avatar user-profile__avatar--empty" aria-hidden="true">
-                            {user.name.charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    <label className="user-profile__avatar-button">
-                        {uploadingAvatar ? 'Uploading…' : 'Change avatar'}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            disabled={uploadingAvatar}
-                            onChange={async (event) => {
-                                const file = event.target.files?.[0];
-                                if (!file) return;
-                                
-                                if (!file.type.startsWith('image/')) {
-                                    toast.error('Please select an image.');
-                                    event.target.value = '';
-                                    return;
-                                }
-                                if (file.size > 5 * 1024 * 1024) {
-                                    toast.error('Image size must not exceed 5 MB.');
-                                    event.target.value = '';
-                                    return;
-                                }
-                                setUploadingAvatar(true);
-                                try {
-                                    await uploadAvatar(file);
-                                    toast.success('Avatar updated successfully.');
-                                } catch (cause) {
-                                    toast.error(cause instanceof Error ? cause.message : 'Image upload error');
-                                } finally {
-                                    setUploadingAvatar(false);
-                                    event.target.value = '';
-                                }
-                            }}
-                        />
-                    </label>
-                </div>
-
-                <div>
-                    <p className="user-profile__eyebrow">
-                        <FontAwesomeIcon icon={faUser} />
-                        {' '}User profile
-                    </p>
-                    <h1 id="user-profile-title">{user.name}</h1>
-                    <p className="user-profile__username">@{user.username}</p>
-                </div>
-            </div>
-
+            <UserAvatar
+                name={user.name}
+                avatar={user.avatar}
+                uploadAvatar={uploadAvatar}
+            />
             {user.bio && (
                 <p className="user-profile__bio">{user.bio}</p>
             )}
@@ -126,38 +73,28 @@ const UserPage = () => {
                 </Link>
             )}
 
-            <button className={`user-profile__action ${editing ? 'user-profile__action--secondary' : 'user-profile__action--edit'}`} type="button" onClick={() => { setError(''); setEditing(!editing); }}>
+            <button
+                className={`user-profile__action ${
+                    editing
+                        ? 'user-profile__action--secondary'
+                        : 'user-profile__action--edit'
+                }`}
+                type="button"
+                onClick={() => setEditing((prev) => !prev)}
+            >
                 <FontAwesomeIcon icon={editing ? faXmark : faPenToSquare} />
                 {editing ? 'Cancel editing' : 'Edit profile'}
             </button>
+
             {editing && (
-                <form className="user-profile__edit" onSubmit={async (event) => {
-                    event.preventDefault();
-                    const form = new FormData(event.currentTarget);
-                    setSaving(true);
-                    setError('');
-                    try {
-                        await updateUser({
-                            name: String(form.get('name')).trim(),
-                            bio: String(form.get('bio')).trim(),
-                            phone: String(form.get('phone')).trim() || null,
-                        });
+                <UserProfileForm
+                    user={user}
+                    onSave={async (data) => {
+                        await updateUser(data);
                         setEditing(false);
-                    } catch (cause) {
-                        setError(cause instanceof Error ? cause.message : 'Could not update profile');
-                    } finally {
-                        setSaving(false);
-                    }
-                }}>
-                    <label>Name<input name="name" defaultValue={user.name} required maxLength={100} /></label>
-                    <label>Bio<textarea name="bio" defaultValue={user.bio ?? ''} rows={4} maxLength={500} /></label>
-                    <label>Phone<input name="phone" type="tel" defaultValue={user.phone ?? ''} maxLength={30} /></label>
-                    {error && <p role="alert" className="user-profile__error">{error}</p>}
-                    <button className="user-profile__action user-profile__action--save" type="submit" disabled={saving}>
-                        <FontAwesomeIcon icon={faFloppyDisk} />
-                        {saving ? 'Saving…' : 'Save changes'}
-                    </button>
-                </form>
+                    }}
+                    onCancel={() => setEditing(false)}
+                />
             )}
 
             <dl className="user-profile__details">
