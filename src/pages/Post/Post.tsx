@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useRef, useState} from 'react';
 import dayjs from 'dayjs';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import { API_URL } from '../../config/api.ts';
 import { getJson } from '../../config/getJson.ts';
 import type { Post } from '../../types';
 import Comments from '../../components/Comments/Comments.tsx';
 import './post.css';
+import PostStats from "./component/PostStats/PostStats.tsx";
 
 const Post = () => {
     const { id } = useParams();
@@ -17,16 +16,25 @@ const Post = () => {
     const [loading, setLoading] = useState(true);
     const [reacting, setReacting] = useState(false);
     const { user, reactToPost } = useAuth();
+    const reactingRef = useRef(false);
 
     const handleReaction = async (reaction: 'like' | 'dislike') => {
-        if (!post || reacting) return;
+        if (!post || reactingRef.current) return;
+
+        reactingRef.current = true;
         setReacting(true);
+
         try {
             const counts = await reactToPost(post.id, reaction);
-            setPost((current) => current ? { ...current, ...counts } : current);
+            setPost(current => current ? { ...current, ...counts } : current);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : `Could not ${reaction} this post`);
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : `Could not ${reaction} this post`
+            );
         } finally {
+            reactingRef.current = false;
             setReacting(false);
         }
     };
@@ -66,22 +74,15 @@ const Post = () => {
                 {post.excerpt && <p className="post-page__excerpt">{post.excerpt}</p>}
                 {!!post.tags.length && <ul className="blog-card__tags">{post.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>}
                 <div className="post-page__body">{post.content}</div>
-                <div className="post-page__stats">
-                    <span>{post.views.toLocaleString()} views</span>
-                    {user ? (
-                        <div className="post-page__reactions" aria-label="Post reactions">
-                            <button type="button" onClick={() => handleReaction('like')} disabled={reacting} aria-label="Like post">
-                                <FontAwesomeIcon icon={faThumbsUp} /> {post.likes}
-                            </button>
-                            <button type="button" onClick={() => handleReaction('dislike')} disabled={reacting} aria-label="Dislike post">
-                                <FontAwesomeIcon icon={faThumbsDown} /> {post.dislikes}
-                            </button>
-                        </div>
-                    ) : (
-                        <><span>{post.likes} likes</span><span>{post.dislikes} dislikes</span></>
-                    )}
-                    <span>{post.commentsCount} comments</span>
-                </div>
+                <PostStats
+                    views={post.views}
+                    likes={post.likes}
+                    dislikes={post.dislikes}
+                    commentsCount={post.commentsCount}
+                    isAuthenticated={!!user}
+                    reacting={reacting}
+                    onReact={handleReaction}
+                />
                 <Comments postId={post.id} />
             </div>
         </article>
