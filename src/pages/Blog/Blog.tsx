@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import { Link, useSearchParams } from 'react-router-dom';
 import { API_URL } from '../../config';
+import { getJson } from '../../config/getJson';
 import type {Pagination as PaginationType, Post, PostsResponse} from '../../types';
 import { Loader, Pagination } from "../../components";
 import './blog.css';
@@ -24,11 +25,7 @@ const Blog = () => {
         const query = new URLSearchParams({ limit: String(PER_PAGE), offset: String(offset) });
         if (tagFilter) query.set('tags', tagFilter);
 
-        fetch(`${API_URL}/posts?${query.toString()}`, { headers: { accept: '*/*' } })
-            .then(async (response): Promise<PostsResponse> => {
-                if (!response.ok) throw new Error('Could not load blog posts');
-                return response.json() as Promise<PostsResponse>;
-            })
+        getJson<PostsResponse>(`${API_URL}/posts?${query.toString()}`)
             .then((result) => {
                 if (active) {
                     setPosts(result.data);

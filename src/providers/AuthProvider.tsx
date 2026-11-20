@@ -221,6 +221,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const value: AuthContextType = {
         user: session?.user ?? null,
+        accessToken: session?.access_token ?? null,
         isAuthenticated: !!session,
         login,
         logout,

@@ -3,6 +3,7 @@ import {Link, NavLink} from 'react-router-dom';
 import LoginModal from '../../../features/auth/components/LoginModal';
 import {useAuth} from "../../../providers/AuthProvider.tsx";
 import { toast } from 'react-toastify';
+import NotificationBell from '../../notifications/NotificationBell';
 import './header.css';
 
 const Header = () => {
@@ -35,10 +36,13 @@ const Header = () => {
 
                     <div className="header__auth">
                         {user ? (
-                            <Link to={`/user/${user.id}`}>
+                            <>
+                                <Link to={`/user/${user.id}`}>
                                 <span>{user.name}</span>
+                                </Link>
+                                <NotificationBell />
                                 <button onClick={handleLogout}>Logout</button>
-                            </Link>
+                            </>
                         ) : (
                             <button onClick={() => setIsLoginOpen(true)}>
                                 Login
