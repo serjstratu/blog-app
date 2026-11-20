@@ -8,6 +8,7 @@ export interface AppNotification {
     link?: string;
     entityType?: string;
     entityId?: string | number;
+    postId?: string | number;
     data?: Record<string, unknown>;
 }
 

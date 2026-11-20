@@ -52,6 +52,18 @@ const Comments = ({ postId }: CommentsProps) => {
         return () => { active = false; };
     }, [postId, page, refreshKey]);
 
+    useEffect(() => {
+        if (loading || !window.location.hash.startsWith('#comment-')) return;
+        const target = document.getElementById(window.location.hash.slice(1));
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('comment--targeted');
+            const timeout = window.setTimeout(() => target.classList.remove('comment--targeted'), 3000);
+            return () => window.clearTimeout(timeout);
+        }
+        if (pagination && page < pagination.totalPages) setPage((current) => current + 1);
+    }, [comments, loading, pagination, page]);
+
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const trimmedContent = content.trim();
@@ -108,7 +120,7 @@ const Comments = ({ postId }: CommentsProps) => {
         const name = author?.name ?? author?.username ?? comment.author_name ?? `User ${comment.authorId}`;
         const avatar = author?.avatar;
         return (
-            <li className={`comment ${depth ? 'comment--reply' : ''}`} key={comment.id}>
+            <li className={`comment ${depth ? 'comment--reply' : ''}`} id={`comment-${comment.id}`} key={comment.id}>
                 <article className="comment__card">
                     <div className="comment__author">
                         {avatar ? <img src={avatar.startsWith('http') ? avatar : `${API_ORIGIN}${avatar}`} alt="" /> : <span className="comment__avatar-placeholder">{name.charAt(0).toUpperCase()}</span>}

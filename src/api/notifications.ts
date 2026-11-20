@@ -1,7 +1,7 @@
 import { API_URL } from '../config';
 import { getJson } from '../config/getJson';
 import { type AppNotification, type NotificationsPage } from '../types';
-import {normalizeNotification} from "../utils/notificationUtils.ts";
+import { normalizeNotification } from "../utils";
 
 const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}`, accept: '*/*' });
 

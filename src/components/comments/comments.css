@@ -98,6 +98,15 @@
     border-radius: 12px;
     background: #fff;
 }
+.comment {
+    scroll-margin-top: 24px;
+}
+.comment--targeted .comment__card {
+    border-color: #6366f1;
+    background: #eef2ff;
+    box-shadow: 0 0 0 4px rgb(99 102 241 / 18%);
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
 .comment__author {
     display: flex;
     align-items: center;

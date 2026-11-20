@@ -1,34 +1,80 @@
-import type {AppNotification} from "../types";
+import type { AppNotification } from '../types';
+
+type UnknownRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is UnknownRecord =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const getString = (...values: unknown[]): string | undefined =>
+    values.find((value): value is string => typeof value === 'string');
+
+const getId = (...values: unknown[]): string | number | undefined =>
+    values.find(
+        (value): value is string | number =>
+            typeof value === 'string' || typeof value === 'number'
+    );
+
+const normalizeRead = (value: unknown): boolean =>
+    value === true || value === 'true' || value === 1;
 
 export const normalizeNotification = (value: unknown): AppNotification | null => {
-    if (!value || typeof value !== 'object') return null;
-    const item = value as Record<string, unknown>;
-    const nestedData = item.data && typeof item.data === 'object' ? item.data as Record<string, unknown> : undefined;
-    const id = item.id;
-    if (typeof id !== 'string' && typeof id !== 'number') return null;
+    if (!isRecord(value)) return null;
 
-    const rawMessage = item.message ?? item.body ?? item.content ?? item.description;
-    const rawTitle = item.title;
-    const createdAt = item.createdAt ?? item.created_at ?? item.timestamp;
-    const read = item.read ?? item.isRead ?? item.is_read;
-    const rawEntityType = item.entityType ?? item.entity_type ?? nestedData?.entityType ?? nestedData?.entity_type;
-    const entityType = typeof rawEntityType === 'string' ? rawEntityType : undefined;
-    const rawEntityId = item.entityId ?? item.entity_id ?? nestedData?.entityId ?? nestedData?.entity_id;
-    const entityId = typeof rawEntityId === 'string' || typeof rawEntityId === 'number'
-        ? rawEntityId
-        : undefined;
-    const explicitLink = typeof item.link === 'string' ? item.link : typeof item.url === 'string' ? item.url : undefined;
+    const data = isRecord(value.data) ? value.data : undefined;
+
+    const id = getId(value.id);
+    if (id === undefined) return null;
+
+    const postId = getId(
+        value.postId,
+        value.post_id,
+        data?.postId,
+        data?.post_id
+    );
+
+    const entityType = getString(
+        value.entityType,
+        value.entity_type,
+        data?.entityType,
+        data?.entity_type
+    );
+
+    const entityId = getId(
+        value.entityId,
+        value.entity_id,
+        data?.entityId,
+        data?.entity_id
+    );
+
+    const link = getString(value.link, value.url);
+    const notificationLink = link ?? (
+        entityType === 'post' && entityId !== undefined
+            ? `/post/${entityId}`
+            : entityType === 'comment' && postId !== undefined && entityId !== undefined
+                ? `/post/${postId}#comment-${entityId}`
+                : undefined
+    );
 
     return {
         id,
-        type: typeof item.type === 'string' ? item.type : undefined,
-        title: typeof rawTitle === 'string' ? rawTitle : undefined,
-        message: typeof rawMessage === 'string' ? rawMessage : 'You have a new notification',
-        createdAt: typeof createdAt === 'string' ? createdAt : new Date().toISOString(),
-        read: read === true || read === 'true' || read === 1,
-        link: explicitLink ?? (entityType === 'post' && entityId !== undefined ? `/post/${entityId}` : undefined),
+        type: getString(value.type),
+        title: getString(value.title),
+        message: getString(
+            value.message,
+            value.body,
+            value.content,
+            value.description
+        ) ?? 'You have a new notification',
+        createdAt: getString(
+            value.createdAt,
+            value.created_at,
+            value.timestamp
+        ) ?? new Date().toISOString(),
+        read: normalizeRead(value.read ?? value.isRead ?? value.is_read),
+        link: notificationLink,
+        postId,
         entityType,
         entityId,
-        data: nestedData,
+        data,
     };
 };
