@@ -33,6 +33,7 @@ export interface RefreshResponse {
 
 export interface AuthContextType {
     user: User | null;
+    accessToken: string | null;
     isAuthenticated: boolean;
     login: (credentials: LoginRequest) => Promise<User>;
     logout: () => Promise<void>;
