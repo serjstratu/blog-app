@@ -10,18 +10,27 @@ const NotificationBell = () => {
     const { unreadCount } = useNotifications();
 
     return (
-        <div className="notification-center">
+        <div className="notification-center" data-testid="notification-center">
             <button
                 className="notification-bell"
                 type="button"
                 aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
                 aria-expanded={open}
-                onClick={() => setOpen((value) => !value)}
+                onClick={() => setOpen(value => !value)}
+                data-testid="notification-bell"
             >
                 <FontAwesomeIcon icon={faBell} />
-                {unreadCount > 0 && <span>{unreadCount > 99 ? '99+' : unreadCount}</span>}
+
+                {unreadCount > 0 && (
+                    <span data-testid="notification-badge">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                )}
             </button>
-            {open && <NotificationDropdown onClose={() => setOpen(false)} />}
+
+            {open && (
+                <NotificationDropdown onClose={() => setOpen(false)} />
+            )}
         </div>
     );
 };

@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { fetchNotifications, fetchUnreadCount, markAllNotificationsRead, markNotificationRead, notificationStreamUrl } from '../api/notifications';
 import { type AppNotification } from '../types';
 import { useAuth } from '../providers/AuthProvider';
-import {normalizeNotification} from "../utils/notificationUtils.ts";
+import { normalizeNotification } from "../utils";
 
 interface NotificationContextValue {
     notifications: AppNotification[];
@@ -88,7 +88,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                                 setNotifications((current) => [item, ...current.filter((existing) => existing.id !== item.id)].slice(0, 20));
                                 if (isNew && !item.read) setUnreadCount((count) => count + 1);
                             } catch {
-                                // Ignore malformed SSE messages and keep the stream alive.
+                                console.log('error', data);
                             }
                         }
                     }
