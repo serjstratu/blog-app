@@ -1,18 +1,26 @@
-import { useState } from 'react';
-import {Link, NavLink} from 'react-router-dom';
-import LoginModal from '../../../features/auth/components/LoginModal';
-import {useAuth} from "../../../providers/AuthProvider.tsx";
+import { useState, type MouseEvent } from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars, faCode, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
+
+import LoginModal from '../../../features/auth/components/LoginModal';
 import NotificationBell from '../../notifications/NotificationBell';
+import { useAuth } from '../../../providers/AuthProvider';
 import './header.css';
 
 const Header = () => {
     const { user, logout } = useAuth();
-    const [isLoginOpen, setIsLoginOpen] = useState(false);
 
-    const handleLogout = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    const [isLoginOpen, setIsLoginOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const closeMenu = () => setIsMenuOpen(false);
+
+    const handleLogout = async (event: MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
-        event.stopPropagation();
+        closeMenu();
+
         try {
             await logout();
         } catch (error) {
@@ -22,29 +30,66 @@ const Header = () => {
 
     return (
         <>
-            <header className="header">
+            <header className="header" data-testid="header">
                 <div className="container header__content">
-                    <NavLink to="/" className="header__logo">
-                        Blog App
+                    <NavLink to="/" className="header__logo" onClick={closeMenu}>
+                        <FontAwesomeIcon icon={faCode} />
+                        <span>Blog App</span>
                     </NavLink>
 
-                    <nav className="header__nav">
-                        <NavLink to="/">Home</NavLink>
-                        <NavLink to="/blog">Blog</NavLink>
-                        <NavLink to="/about">About</NavLink>
+                    <button
+                        className="header__menu-toggle"
+                        type="button"
+                        onClick={() => setIsMenuOpen((prev) => !prev)}
+                        aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                        aria-expanded={isMenuOpen}
+                        aria-controls="header-navigation"
+                    >
+                        <FontAwesomeIcon icon={isMenuOpen ? faXmark : faBars} />
+                    </button>
+
+                    <nav
+                        id="header-navigation"
+                        className={`header__nav ${isMenuOpen ? 'header__nav--open' : ''}`}
+                    >
+                        <NavLink to="/" end onClick={closeMenu}>
+                            Home
+                        </NavLink>
+                        <NavLink to="/blog" onClick={closeMenu}>
+                            Blog
+                        </NavLink>
+                        <NavLink to="/about" onClick={closeMenu}>
+                            About
+                        </NavLink>
                     </nav>
 
                     <div className="header__auth">
                         {user ? (
                             <>
-                                <Link to={`/user/${user.id}`}>
-                                <span>{user.name}</span>
+                                <Link
+                                    to={`/user/${user.id}`}
+                                    className="header__user"
+                                    onClick={closeMenu}
+                                >
+                                    {user.name}
                                 </Link>
+
                                 <NotificationBell />
-                                <button onClick={handleLogout}>Logout</button>
+
+                                <button
+                                    className="header__button header__button--secondary"
+                                    type="button"
+                                    onClick={handleLogout}
+                                >
+                                    Logout
+                                </button>
                             </>
                         ) : (
-                            <button onClick={() => setIsLoginOpen(true)}>
+                            <button
+                                className="header__button"
+                                type="button"
+                                onClick={() => setIsLoginOpen(true)}
+                            >
                                 Login
                             </button>
                         )}
