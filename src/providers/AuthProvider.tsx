@@ -184,6 +184,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const deletePost = async (postId: number): Promise<void> => {
+        if (!session) throw new Error('You must be logged in to delete posts');
+        if (!session.user.roles.some((role) => ['admin', 'editor'].includes(role.toLowerCase()))) {
+            throw new Error('Only editors and administrators can delete posts');
+        }
+        const response = await fetch(`${API_URL}/posts/${postId}`, {
+            method: 'DELETE',
+            headers: { accept: '*/*', Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || 'Could not delete post');
+        }
+    };
+
     const reactToPost = async (postId: number, reaction: 'like' | 'dislike') => {
         if (!session) throw new Error('You must be logged in to react to a post');
         const response = await fetch(`${API_URL}/posts/${postId}/${reaction}`, {
@@ -229,6 +244,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         refreshUser,
         createComment,
         deleteComment,
+        deletePost,
         reactToPost,
         createPost,
     };

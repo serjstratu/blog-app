@@ -120,6 +120,7 @@ describe('Header', () => {
                 user: {
                     id: 1,
                     name: 'John Doe',
+                    roles: ['user'],
                 },
                 logout: mockLogout,
             });
@@ -139,6 +140,21 @@ describe('Header', () => {
 
             expect(screen.queryByRole('button', { name: 'Login' }))
                 .not.toBeInTheDocument();
+
+            expect(screen.queryByRole('link', { name: 'Dashboard' }))
+                .not.toBeInTheDocument();
+        });
+
+        it('should display the dashboard link for administrators', () => {
+            mockUseAuth.mockReturnValue({
+                user: { id: 1, name: 'Admin User', roles: ['admin'] },
+                logout: mockLogout,
+            });
+
+            renderHeader();
+
+            expect(screen.getByRole('link', { name: 'Dashboard' }))
+                .toHaveAttribute('href', '/dashboard');
         });
 
         it('should call logout when Logout is clicked', async () => {

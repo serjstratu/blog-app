@@ -42,6 +42,7 @@ export interface AuthContextType {
     refreshUser: (id: number) => Promise<User>;
     createComment: (postId: number, content: string, parentId?: number | null) => Promise<Comment>;
     deleteComment: (commentId: number) => Promise<void>;
+    deletePost: (postId: number) => Promise<void>;
     reactToPost: (postId: number, reaction: 'like' | 'dislike') => Promise<{ likes: number; dislikes: number }>;
     createPost: (input: CreatePostInput) => Promise<Post>;
 }

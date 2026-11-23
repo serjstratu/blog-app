@@ -69,6 +69,9 @@ const Header = () => {
                     <div className="header__auth">
                         {user ? (
                             <>
+                                {user.roles?.some((role) => role.toLowerCase() === 'admin') && (
+                                    <Link to="/dashboard" className="header__user" onClick={closeMenu}>Dashboard</Link>
+                                )}
                                 <Link
                                     to={`/user/${user.id}`}
                                     className="header__user"
