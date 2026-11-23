@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import { Link, useSearchParams } from 'react-router-dom';
-import { API_URL } from '../../config';
+import { API_URL, DEFAULT_PAGE_SIZE } from '../../config';
 import { getJson } from '../../config/getJson';
 import type {Pagination as PaginationType, Post, PostsResponse} from '../../types';
 import { Loader, Pagination } from "../../components";
 import './blog.css';
-
-const PER_PAGE = 20;
 
 const Blog = () => {
     const [posts, setPosts] = useState<Post[]>([]);
@@ -21,8 +19,8 @@ const Blog = () => {
     useEffect(() => {
         let active = true;
         setLoading(true);
-        const offset = (page - 1) * PER_PAGE;
-        const query = new URLSearchParams({ limit: String(PER_PAGE), offset: String(offset) });
+        const offset = (page - 1) * DEFAULT_PAGE_SIZE;
+        const query = new URLSearchParams({ limit: String(DEFAULT_PAGE_SIZE), offset: String(offset) });
         if (tagFilter) query.set('tags', tagFilter);
 
         getJson<PostsResponse>(`${API_URL}/posts?${query.toString()}`)
@@ -63,7 +61,7 @@ const Blog = () => {
                                             {dayjs(post.publishedAt ?? post.createdAt).format('DD.MM.YYYY')}
                                         </time>
                                     </div>
-                                    <h2><Link to={`/post/${post.id}`}>{post.title}</Link></h2>
+                                    <h2><Link to={`/post/${post.slug}`}>{post.title}</Link></h2>
                                     <p>{post.excerpt || post.content}</p>
                                     {!!post.tags.length && <ul className="blog-card__tags">{post.tags.map((tag) => <li key={tag}><Link to={`/blog?tag=${encodeURIComponent(tag)}`} aria-label={`Search posts tagged ${tag}`}>{tag}</Link></li>)}</ul>}
                                     <div className="blog-card__stats">

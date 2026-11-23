@@ -2,15 +2,13 @@ import {useEffect, useState, type FormEvent, type ReactNode, useRef} from 'react
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import { API_ORIGIN, API_URL } from '../../config';
+import { API_ORIGIN, API_URL, DEFAULT_PAGE_SIZE } from '../../config';
 import { getJson } from '../../config/getJson';
 import {Loader, Pagination} from "../index.ts";
 import { sortCommentsByCreatedAt } from "../../utils";
 import { useAuth } from '../../providers/AuthProvider';
 import type { Comment, CommentsResponse, Pagination as PaginationData } from '../../types';
 import './comments.css';
-const PAGE_SIZE = 20;
-
 interface CommentsProps {
     postId: number;
 }
@@ -32,8 +30,8 @@ const Comments = ({ postId }: CommentsProps) => {
     useEffect(() => {
         let active = true;
         setLoading(true);
-        const offset = (page - 1) * PAGE_SIZE;
-        getJson<Comment[] | CommentsResponse>(`${API_URL}/comments?postId=${postId}&limit=${PAGE_SIZE}&offset=${offset}`)
+        const offset = (page - 1) * DEFAULT_PAGE_SIZE;
+        getJson<Comment[] | CommentsResponse>(`${API_URL}/comments?postId=${postId}&limit=${DEFAULT_PAGE_SIZE}&offset=${offset}`)
             .then((result) => {
                 if (!active) return;
                 if (Array.isArray(result)) {

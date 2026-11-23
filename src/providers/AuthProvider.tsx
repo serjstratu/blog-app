@@ -6,10 +6,9 @@ import {
     useState,
     type ReactNode,
 } from 'react';
-import type {AuthContextType, CreatePostInput, LoginRequest, LoginResponse} from "../types";
+import type {AuthContextType, CreatePostInput, LoginRequest, LoginResponse,Comment,User} from "../types";
 import {authService} from "../services/authService.ts";
 import { API_URL } from '../config';
-import type {Comment, User} from '../types';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 

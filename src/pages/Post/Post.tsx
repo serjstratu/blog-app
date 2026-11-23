@@ -5,13 +5,14 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import { API_URL } from '../../config';
 import { getJson } from '../../config/getJson.ts';
+import { findPostBySlug } from '../../api/posts.ts';
 import type { Post } from '../../types';
 import './post.css';
 import PostStats from "./component/PostStats/PostStats.tsx";
 import {Comments} from "../../components";
 
 const Post = () => {
-    const { id } = useParams();
+    const { id: slugOrId } = useParams();
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [reacting, setReacting] = useState(false);
@@ -40,21 +41,25 @@ const Post = () => {
     };
 
     useEffect(() => {
-        const postId = Number(id);
-        if (!Number.isInteger(postId) || postId < 1) {
+        if (!slugOrId) {
             setLoading(false);
             return;
         }
         let active = true;
         setLoading(true);
-        getJson<Post>(`${API_URL}/posts/${postId}`)
+        const postRequest = /^\d+$/.test(slugOrId)
+            ? getJson<Post>(`${API_URL}/posts/${slugOrId}`)
+            : findPostBySlug(slugOrId).then((matchedPost) =>
+                getJson<Post>(`${API_URL}/posts/${matchedPost.id}`),
+            );
+        postRequest
             .then((data) => { if (active) setPost(data); })
             .catch((error: unknown) => {
                 if (active) toast.error(error instanceof Error ? error.message : 'Could not load this post');
             })
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
-    }, [id]);
+    }, [slugOrId]);
 
     if (loading) return <section className="post-page"><p>Loading post…</p></section>;
     if (!post) return <section className="post-page"><h1>Post not found</h1><Link to="/blog">Back to blog</Link></section>;

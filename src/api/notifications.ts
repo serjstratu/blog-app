@@ -1,4 +1,4 @@
-import { API_URL } from '../config';
+import { API_URL, DEFAULT_PAGE_SIZE } from '../config';
 import { getJson } from '../config/getJson';
 import { type AppNotification, type NotificationsPage } from '../types';
 import { normalizeNotification } from "../utils";
@@ -10,7 +10,7 @@ const parseError = async (response: Response, fallback: string) => {
     return new Error(body?.detail || fallback);
 };
 
-export const fetchNotifications = async (token: string, limit = 20, offset = 0): Promise<AppNotification[]> => {
+export const fetchNotifications = async (token: string, limit = DEFAULT_PAGE_SIZE, offset = 0): Promise<AppNotification[]> => {
     const result = await getJson<unknown[] | NotificationsPage>(`${API_URL}/notifications?limit=${limit}&offset=${offset}`, authHeaders(token));
     const values = Array.isArray(result) ? result : result.data;
     return values.map(normalizeNotification).filter((item): item is AppNotification => item !== null);
