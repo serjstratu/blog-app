@@ -34,6 +34,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         if (!accessToken) {
             setNotifications([]);
             setUnreadCount(0);
+            seenIds.current.clear();
             return;
         }
         setLoading(true);
