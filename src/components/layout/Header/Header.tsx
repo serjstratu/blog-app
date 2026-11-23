@@ -1,5 +1,5 @@
 import { useState, type MouseEvent } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faCode, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
@@ -11,6 +11,7 @@ import './header.css';
 
 const Header = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
 
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,6 +26,8 @@ const Header = () => {
             await logout();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Could not log out');
+        } finally {
+            navigate('/', { replace: true });
         }
     };
 

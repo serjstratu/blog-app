@@ -1,10 +1,9 @@
 import type {
     LoginRequest,
     LoginResponse,
-} from '../../../types';
-import { API_URL } from '../../../config';
-
-let refreshRequest: Promise<import('../../../types/auth.types.ts').RefreshResponse> | null = null;
+} from '../types';
+import {API_URL} from "../config";
+let refreshRequest: Promise<import('../types/auth.types.ts').RefreshResponse> | null = null;
 
 export const authService = {
     async login(credentials: LoginRequest): Promise<LoginResponse> {
@@ -33,7 +32,7 @@ export const authService = {
                 credentials: 'include',
             }).then(async (response) => {
                 if (!response.ok) throw new Error('Session expired. Please log in again.');
-                return response.json() as Promise<import('../../../types/auth.types.ts').RefreshResponse>;
+                return await response.json() as Promise<import('../types/auth.types.ts').RefreshResponse>;
             }).finally(() => { refreshRequest = null; });
         }
         return refreshRequest;

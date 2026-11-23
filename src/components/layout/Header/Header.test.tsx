@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'react-toastify';
 
@@ -36,8 +36,14 @@ const renderHeader = (initialRoute = '/') => {
     return render(
         <MemoryRouter initialEntries={[initialRoute]}>
             <Header />
+            <CurrentRoute />
         </MemoryRouter>,
     );
+};
+
+const CurrentRoute = () => {
+    const location = useLocation();
+    return <output data-testid="current-route">{location.pathname}</output>;
 };
 
 describe('Header', () => {
@@ -147,6 +153,17 @@ describe('Header', () => {
             });
         });
 
+        it('should navigate to the home page after logout', async () => {
+            mockLogout.mockResolvedValue(undefined);
+
+            renderHeader('/user/1');
+            fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+            await waitFor(() => {
+                expect(screen.getByTestId('current-route')).toHaveTextContent('/');
+            });
+        });
+
         it('should display error toast when logout fails', async () => {
             mockLogout.mockRejectedValue(new Error('Logout failed'));
 
@@ -156,6 +173,7 @@ describe('Header', () => {
 
             await waitFor(() => {
                 expect(toast.error).toHaveBeenCalledWith('Logout failed');
+                expect(screen.getByTestId('current-route')).toHaveTextContent('/');
             });
         });
 

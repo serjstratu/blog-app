@@ -28,6 +28,10 @@ const UserPage = () => {
     const [editing, setEditing] = useState(false);
 
     useEffect(() => {
+        if (!currentUser) {
+            setLoading(false);
+            return;
+        }
         const userId = Number(id);
         if (!Number.isInteger(userId) || userId <= 0) {
             setLoading(false);
@@ -42,12 +46,13 @@ const UserPage = () => {
             })
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
-    }, [id, refreshUser]);
+    }, [id, refreshUser, currentUser?.id]);
 
     useEffect(() => {
         if (currentUser && currentUser.id === Number(id)) setProfile(currentUser);
     }, [currentUser, id]);
 
+    if (!currentUser) return <Navigate to="/" replace />;
     if (loading) {
         return (
             <section className="user-profile" data-testid="user-profile">
