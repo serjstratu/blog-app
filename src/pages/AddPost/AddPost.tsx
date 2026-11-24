@@ -48,7 +48,9 @@ const AddPost = () => {
         try {
             const post = await createPost(input);
             toast.success('Post created successfully.');
-            navigate(post.id ? `/post/${post.id}` : '/blog');
+            navigate(post.id ? `/post/${post.slug || post.id}` : '/blog', {
+                state: { createdPost: post },
+            });
         } catch (error) {
             toast.error(
                 error instanceof Error ? error.message : 'Could not create post'

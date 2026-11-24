@@ -52,6 +52,14 @@
     line-height: 1.85;
     white-space: pre-wrap;
 }
+.post-page__draft-comments {
+    margin-top: 32px;
+    padding: 18px;
+    border-radius: 10px;
+    color: #64748b;
+    background: #f8fafc;
+    font-size: 14px;
+}
 
 @media (max-width: 600px) {
     .post-page {

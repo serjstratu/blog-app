@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import dayjs from 'dayjs';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import { API_URL } from '../../config';
@@ -13,6 +13,8 @@ import {Comments} from "../../components";
 
 const Post = () => {
     const { id: slugOrId } = useParams();
+    const location = useLocation();
+    const createdPost = (location.state as { createdPost?: Post } | null)?.createdPost;
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [reacting, setReacting] = useState(false);
@@ -45,6 +47,11 @@ const Post = () => {
             setLoading(false);
             return;
         }
+        if (createdPost && (createdPost.slug === slugOrId || String(createdPost.id) === slugOrId)) {
+            setPost(createdPost);
+            setLoading(false);
+            return;
+        }
         let active = true;
         setLoading(true);
         const postRequest = /^\d+$/.test(slugOrId)
@@ -59,7 +66,7 @@ const Post = () => {
             })
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
-    }, [slugOrId]);
+    }, [slugOrId, createdPost]);
 
     if (loading) return <section className="post-page"><p>Loading post…</p></section>;
     if (!post) return <section className="post-page"><h1>Post not found</h1><Link to="/blog">Back to blog</Link></section>;
@@ -88,7 +95,11 @@ const Post = () => {
                     reacting={reacting}
                     onReact={handleReaction}
                 />
-                <Comments postId={post.id} />
+                {post.status === 'published' ? <Comments postId={post.id} /> : (
+                    <p className="post-page__draft-comments" role="status">
+                        Comments will be available when this post is published.
+                    </p>
+                )}
             </div>
         </article>
     );

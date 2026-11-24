@@ -199,6 +199,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const updatePost = async (postId: number, input: CreatePostInput): Promise<import('../types').Post> => {
+        if (!session) throw new Error('You must be logged in to edit posts');
+        if (!session.user.roles.some((role) => ['admin', 'editor'].includes(role.toLowerCase()))) {
+            throw new Error('Only editors and administrators can edit posts');
+        }
+        const response = await fetch(`${API_URL}/posts/${postId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                accept: '*/*',
+                Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(input),
+        });
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.detail || 'Could not update post');
+        }
+        return response.json() as Promise<import('../types').Post>;
+    };
+
     const reactToPost = async (postId: number, reaction: 'like' | 'dislike') => {
         if (!session) throw new Error('You must be logged in to react to a post');
         const response = await fetch(`${API_URL}/posts/${postId}/${reaction}`, {
@@ -245,6 +266,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         createComment,
         deleteComment,
         deletePost,
+        updatePost,
         reactToPost,
         createPost,
     };

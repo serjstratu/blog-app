@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../providers/AuthProvider';
@@ -24,6 +24,7 @@ export default function Dashboard() {
     const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<string | null>(null);
+    const navigate = useNavigate();
     const isAdmin = user?.roles.some((role) => role.toLowerCase() === 'admin') ?? false;
     const isEditor = user?.roles.some((role) => role.toLowerCase() === 'editor') ?? false;
     const canAccessDashboard = isAdmin || isEditor;
@@ -34,6 +35,7 @@ export default function Dashboard() {
         setLoading(true);
         const offset = (postPage - 1) * DEFAULT_PAGE_SIZE;
         const query = new URLSearchParams({ limit: String(DEFAULT_PAGE_SIZE), offset: String(offset) });
+        query.set('include_unpublished', 'true');
         if (isEditor && !isAdmin && user) query.set('user_id', String(user.id));
         getJson<PostsResponse>(`${API_URL}/posts?${query.toString()}`, {
             accept: '*/*', Authorization: `Bearer ${accessToken}`,
@@ -129,6 +131,7 @@ export default function Dashboard() {
                     deleting={deleting}
                     onPageChange={setPostPage}
                     onDelete={(postId: number) => void confirmDelete('posts', postId)}
+                    onEdit={(post) => navigate(`/post/edit/${post.id}`, { state: { post } })}
                 />
             ) : (
                 <DashComments

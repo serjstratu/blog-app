@@ -132,6 +132,13 @@
     opacity: 0.55;
     cursor: wait;
 }
+.dashboard__actions { display: flex; align-items: center; gap: 8px; }
+.dashboard__action { display: inline-grid; place-items: center; width: 34px; height: 34px; border: 1px solid; border-radius: 8px; background: #fff; cursor: pointer; }
+.dashboard__action--edit { border-color: #c7d2fe; color: #4338ca; }
+.dashboard__action--edit:hover { background: #eef2ff; }
+.dashboard__action--delete { border-color: #fecaca; color: #b91c1c; }
+.dashboard__action--delete:hover:not(:disabled) { color: #fff; background: #dc2626; }
+.dashboard__action:disabled { opacity: .55; cursor: wait; }
 .dashboard__comment {
     max-width: 360px;
 }

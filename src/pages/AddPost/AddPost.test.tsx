@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import AddPost from './AddPost';
 import type { CreatePostInput } from '../../types';
 
@@ -10,6 +10,12 @@ const mocks = vi.hoisted(() => ({
     toastSuccess: vi.fn(),
     toastError: vi.fn(),
 }));
+
+const CreatedPostRoute = () => {
+    const location = useLocation();
+    const createdPost = (location.state as { createdPost?: { id: number } } | null)?.createdPost;
+    return <div data-testid="post-page" data-created-post-id={createdPost?.id} data-post-path={location.pathname}>Post details</div>;
+};
 
 vi.mock('../../providers/AuthProvider', () => ({
     useAuth: mocks.useAuth,
@@ -46,7 +52,7 @@ describe('AddPost', () => {
                     />
                     <Route
                         path="/post/:id"
-                        element={<div data-testid="post-page">Post details</div>}
+                        element={<CreatedPostRoute />}
                     />
                     <Route
                         path="/blog"
@@ -63,7 +69,7 @@ describe('AddPost', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockCreatePost.mockResolvedValue({ id: 123 });
+        mockCreatePost.mockResolvedValue({ id: 123, slug: 'created-post', status: 'draft' });
     });
 
     describe('Rendering', () => {
@@ -228,6 +234,8 @@ describe('AddPost', () => {
             await user.click(screen.getByTestId('add-post-submit'));
 
             expect(await screen.findByTestId('post-page')).toBeInTheDocument();
+            expect(screen.getByTestId('post-page')).toHaveAttribute('data-created-post-id', '123');
+            expect(screen.getByTestId('post-page')).toHaveAttribute('data-post-path', '/post/created-post');
         });
 
         it('should navigate to blog when created post has no ID', async () => {

@@ -18,7 +18,7 @@ const pagination = {
 const renderDashPosts = (overrides: Partial<React.ComponentProps<typeof DashPosts>> = {}) => {
     const props: React.ComponentProps<typeof DashPosts> = {
         posts: [post], pagination: null, loading: false, deleting: null,
-        onPageChange: vi.fn(), onDelete: vi.fn(), ...overrides,
+        onPageChange: vi.fn(), onDelete: vi.fn(), onEdit: vi.fn(), ...overrides,
     };
     return { ...render(<MemoryRouter><DashPosts {...props} /></MemoryRouter>), props };
 };
@@ -37,15 +37,25 @@ describe('DashPosts', () => {
         const onDelete = vi.fn();
         renderDashPosts({ onDelete });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+        fireEvent.click(screen.getByRole('button', { name: `Remove ${post.title}` }));
 
         expect(onDelete).toHaveBeenCalledWith(post.id);
+    });
+
+    it('calls onEdit with the selected post', () => {
+        const onEdit = vi.fn();
+        renderDashPosts({ onEdit });
+
+        fireEvent.click(screen.getByRole('button', { name: `Edit ${post.title}` }));
+
+        expect(onEdit).toHaveBeenCalledWith(post);
     });
 
     it('shows the in-progress delete state and disables the action', () => {
         renderDashPosts({ deleting: `posts-${post.id}` });
 
-        expect(screen.getByRole('button', { name: 'Deleting…' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: `Remove ${post.title}` })).toBeDisabled();
+        expect(screen.getByRole('button', { name: `Remove ${post.title}` })).toHaveAttribute('aria-busy', 'true');
     });
 
     it('shows an empty state when there are no posts', () => {

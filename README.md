@@ -108,7 +108,7 @@ Vite prints the local frontend URL in the terminal (typically `http://localhost:
 | `/add/` | Create a post (admin/editor roles only) |
 | `/dashboard` | Admin: browse posts and per-post comments. Editor: browse own posts only. |
 
-The header includes a dashboard link for users with the `admin` or `editor` role. The dashboard route redirects guests and users without either role to `/`. Editors' post listings include the `user_id` query parameter, so only their own posts appear. The comments endpoint requires a `postId`, so administrators choose a post before viewing or deleting its comments.
+The header includes a dashboard link for users with the `admin` or `editor` role. The dashboard route redirects guests and users without either role to `/`. Dashboard post listings include `include_unpublished=true`, so administrators can manage unpublished posts as well as published posts. Editors' post listings also include the `user_id` query parameter, so only their own posts appear. The comments endpoint requires a `postId`, so administrators choose a post before viewing or deleting its comments.
 
 ## API endpoints used
 
@@ -120,7 +120,8 @@ The frontend currently calls these endpoints relative to `VITE_API_URL`:
 | `POST` | `/auth/refresh` | Refresh the access token using the HttpOnly refresh cookie |
 | `POST` | `/auth/logout` | Clear the refresh cookie and log out |
 | `GET` | `/posts?limit=20&offset=0` | Load the blog listing |
-| `GET` | `/posts?limit=20&offset=0&user_id={id}` | Load posts written by a user (editor dashboard) |
+| `GET` | `/posts?limit=20&offset=0&include_unpublished=true` | Load unpublished and published posts for the admin dashboard |
+| `GET` | `/posts?limit=20&offset=0&user_id={id}&include_unpublished=true` | Load a user's unpublished and published posts (editor dashboard) |
 | `GET` | `/posts/{id}` | Load an individual post |
 | `POST` | `/posts` | Create a post (admin/editor roles) |
 | `DELETE` | `/posts/{id}` | Delete a post from the dashboard (admin/editor roles) |

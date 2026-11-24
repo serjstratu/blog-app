@@ -1,0 +1,127 @@
+.edit-post {
+    width: min(100%, 780px);
+    margin: 36px auto 64px;
+}
+.edit-post__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 22px;
+    color: #4f46e5;
+    font-weight: 600;
+    text-decoration: none;
+}
+.edit-post__back:hover {
+    text-decoration: underline;
+}
+.edit-post__header {
+    margin-bottom: 24px;
+}
+.edit-post__header p {
+    margin: 0 0 6px;
+    color: #4f46e5;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+.edit-post__header h1 {
+    margin: 0 0 8px;
+    color: #0f172a;
+    font-size: 36px;
+}
+.edit-post__header span,
+.edit-post__hint {
+    color: #64748b;
+    font-size: 14px;
+}
+.edit-post__form {
+    display: grid;
+    gap: 18px;
+    padding: 28px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgb(15 23 42 / 5%);
+}
+.edit-post__form > label,
+.edit-post__row label {
+    display: grid;
+    gap: 7px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+.edit-post__form input:not([type="checkbox"]),
+.edit-post__form textarea,
+.edit-post__form select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #0f172a;
+    background: #fff;
+    font: inherit;
+    font-weight: 400;
+}
+.edit-post__form textarea {
+    resize: vertical;
+    line-height: 1.55;
+}
+.edit-post__form input:focus,
+.edit-post__form textarea:focus,
+.edit-post__form select:focus {
+    border-color: #6366f1;
+    outline: 3px solid rgb(99 102 241 / 16%);
+}
+.edit-post__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.edit-post__checkbox {
+    display: flex !important;
+    align-items: center;
+    gap: 9px !important;
+}
+.edit-post__checkbox input {
+    width: 17px;
+    height: 17px;
+    accent-color: #4f46e5;
+}
+.edit-post__submit {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 9px;
+    color: #fff;
+    background: #4f46e5;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+.edit-post__submit:hover:not(:disabled) {
+    background: #4338ca;
+}
+.edit-post__submit:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+@media (max-width: 560px) {
+    .edit-post {
+        margin: 24px auto 40px;
+    }
+    .edit-post__form {
+        padding: 20px;
+    }
+    .edit-post__row {
+        grid-template-columns: 1fr;
+    }
+    .edit-post__header h1 {
+        font-size: 30px;
+    }
+}
