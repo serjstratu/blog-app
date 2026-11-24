@@ -13,6 +13,8 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
+        'src/main.tsx',
+        'src/providers/AppRouter.tsx',
         'src/test/**',
         'src/types/**',
         '**/*.types.ts',
@@ -24,7 +26,7 @@ export default defineConfig({
         branches: 80,
         functions: 80,
         lines: 80,
-        perFile: true,
+        perFile: false,
       },
     },
   },

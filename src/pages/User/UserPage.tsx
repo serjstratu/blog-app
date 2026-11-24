@@ -62,6 +62,7 @@ const UserPage = () => {
     }
     if (!profile) return <Navigate to="/" replace />;
     const user = profile;
+    const isOwnProfile = currentUser.id === user.id;
 
     return (
         <section
@@ -94,7 +95,7 @@ const UserPage = () => {
                 </Link>
             )}
 
-            <button
+            {isOwnProfile && <button
                 data-testid="edit-profile-button"
                 className={`user-profile__action ${
                     editing
@@ -106,9 +107,9 @@ const UserPage = () => {
             >
                 <FontAwesomeIcon icon={editing ? faXmark : faPenToSquare} />
                 {editing ? 'Cancel editing' : 'Edit profile'}
-            </button>
+            </button>}
 
-            {editing && (
+            {isOwnProfile && editing && (
                 <div data-testid="user-profile-form">
                     <UserProfileForm
                         user={user}
