@@ -87,4 +87,20 @@ describe('Dashboard', () => {
         expect(await screen.findByText('Home page')).toBeInTheDocument();
         expect(mockGetJson).not.toHaveBeenCalled();
     });
+
+    it('lets editors see only their own posts', async () => {
+        mockUseAuth.mockReturnValue({
+            user: { id: 11, roles: ['editor'] }, accessToken: 'editor-token',
+            deletePost: vi.fn(), deleteComment: vi.fn(),
+        });
+
+        renderDashboard();
+
+        expect(await screen.findByRole('link', { name: 'Dashboard post' })).toBeInTheDocument();
+        expect(mockGetJson).toHaveBeenCalledWith(
+            expect.stringContaining('user_id=11'),
+            expect.objectContaining({ Authorization: 'Bearer editor-token' }),
+        );
+        expect(screen.queryByRole('tab', { name: 'Comments' })).not.toBeInTheDocument();
+    });
 });

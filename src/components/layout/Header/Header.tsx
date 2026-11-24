@@ -69,7 +69,7 @@ const Header = () => {
                     <div className="header__auth">
                         {user ? (
                             <>
-                                {user.roles?.some((role) => role.toLowerCase() === 'admin') && (
+                                {user.roles?.some((role) => ['admin', 'editor'].includes(role.toLowerCase())) && (
                                     <Link to="/dashboard" className="header__user" onClick={closeMenu}>Dashboard</Link>
                                 )}
                                 <Link
