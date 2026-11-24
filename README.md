@@ -13,7 +13,10 @@ The project is evolving as new features and experiments are added.
 - Read paginated comments and threaded replies as a guest or logged-in user.
 - Add comments and replies when logged in.
 - Delete comments as an administrator.
+- Open the admin dashboard at `/dashboard` to browse and delete posts and comments.
+- Open the editor dashboard at `/dashboard` to browse your own posts, filtered by the authenticated user ID.
 - Create posts as a user with the `admin` or `editor` role at `/add/`.
+- Write post content with the Markdown editor; post pages render the saved Markdown formatting.
 - Save a new post as a draft or publish it, with optional category, tags, cover image, excerpt, and featured flag.
 - Log in using an email or username and password, with cookie-based refresh and logout.
 - View a user profile at `/user/:id`, including avatar and account details.
@@ -100,9 +103,12 @@ Vite prints the local frontend URL in the terminal (typically `http://localhost:
 | `/` | Home page |
 | `/about` | Project purpose and technology overview |
 | `/blog` | List of recent posts |
-| `/post/:id` | Post details loaded from the API |
+| `/post/:id` | Post details loaded from the API; `:id` can be a post ID or slug |
 | `/user/:id` | User profile and profile editing |
 | `/add/` | Create a post (admin/editor roles only) |
+| `/dashboard` | Admin: browse posts and per-post comments. Editor: browse own posts only. |
+
+The header includes a dashboard link for users with the `admin` or `editor` role. The dashboard route redirects guests and users without either role to `/`. Editors' post listings include the `user_id` query parameter, so only their own posts appear. The comments endpoint requires a `postId`, so administrators choose a post before viewing or deleting its comments.
 
 ## API endpoints used
 
@@ -114,8 +120,10 @@ The frontend currently calls these endpoints relative to `VITE_API_URL`:
 | `POST` | `/auth/refresh` | Refresh the access token using the HttpOnly refresh cookie |
 | `POST` | `/auth/logout` | Clear the refresh cookie and log out |
 | `GET` | `/posts?limit=20&offset=0` | Load the blog listing |
+| `GET` | `/posts?limit=20&offset=0&user_id={id}` | Load posts written by a user (editor dashboard) |
 | `GET` | `/posts/{id}` | Load an individual post |
 | `POST` | `/posts` | Create a post (admin/editor roles) |
+| `DELETE` | `/posts/{id}` | Delete a post from the dashboard (admin/editor roles) |
 | `POST` | `/posts/{id}/like` | Like a post |
 | `POST` | `/posts/{id}/dislike` | Dislike a post |
 | `GET` | `/comments?postId={id}&limit=20&offset=0` | Load paginated comments and nested replies |
@@ -135,6 +143,7 @@ src/
 ├── config/              # API configuration and shared fetch helpers
 ├── features/auth/       # Login form, validation, and auth service
 ├── pages/               # Route pages and page-specific components/styles
+│   └── Dashboard/       # Dashboard tabs, post/comment views, and their tests
 ├── providers/            # App router and authentication context
 ├── types/                # Shared API and auth data types
 └── utils/                # Date formatting and sorting helpers
