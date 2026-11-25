@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import { API_URL } from '../../config';
@@ -9,7 +9,7 @@ import { findPostBySlug } from '../../api';
 import type { Post } from '../../types';
 import './post.css';
 import PostStats from "./component/PostStats/PostStats.tsx";
-import {Comments} from "../../components";
+import { Breadcrumbs, Comments } from '../../components';
 
 const Post = () => {
     const { id: slugOrId } = useParams();
@@ -101,42 +101,44 @@ const Post = () => {
     }, [postQuery.isError, postQuery.error]);
 
     if (loading) return <section className="post-page"><p>Loading post…</p></section>;
-    if (!post) return <section className="post-page"><h1>Post not found</h1><Link to="/blog">Back to blog</Link></section>;
+    if (!post) return <section className="post-page"><Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Blog', to: '/blog' }, { label: 'Post not found' }]} /><h1>Post not found</h1></section>;
 
     return (
-        <article className="post-page">
-            <Link className="post-page__back" to="/blog">← Back to blog</Link>
-            {post.image && <img className="post-page__cover" src={post.image} alt="" />}
-            <div className="post-page__content">
-                <div className="post-page__meta">
-                    {post.isFeatured && <span className="blog-card__featured">Featured</span>}
-                    <time dateTime={post.publishedAt ?? post.createdAt}>
-                        {dayjs(post.publishedAt ?? post.createdAt).format('DD.MM.YYYY')}
-                    </time>
+        <>
+            <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Blog', to: '/blog' }, { label: post.title }]} />
+            <article className="post-page">
+                {post.image && <img className="post-page__cover" src={post.image} alt="" />}
+                <div className="post-page__content">
+                    <div className="post-page__meta">
+                        {post.isFeatured && <span className="blog-card__featured">Featured</span>}
+                        <time dateTime={post.publishedAt ?? post.createdAt}>
+                            {dayjs(post.publishedAt ?? post.createdAt).format('DD.MM.YYYY')}
+                        </time>
+                    </div>
+                    <h1>{post.title}</h1>
+                    {post.excerpt && <p className="post-page__excerpt">{post.excerpt}</p>}
+                    {!!post.tags.length && <ul className="blog-card__tags">{post.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>}
+                    <div className="post-page__body">{post.content}</div>
+                    <PostStats
+                        views={post.views}
+                        likes={post.likes}
+                        dislikes={post.dislikes}
+                        commentsCount={post.commentsCount}
+                        isAuthenticated={!!user}
+                        reacting={reacting}
+                        onReact={handleReaction}
+                        isFavorite={isFavorite}
+                        favoriting={favoriting}
+                        onToggleFavorite={handleToggleFavorite}
+                    />
+                    {post.status === 'published' ? <Comments postId={post.id} /> : (
+                        <p className="post-page__draft-comments" role="status">
+                            Comments will be available when this post is published.
+                        </p>
+                    )}
                 </div>
-                <h1>{post.title}</h1>
-                {post.excerpt && <p className="post-page__excerpt">{post.excerpt}</p>}
-                {!!post.tags.length && <ul className="blog-card__tags">{post.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>}
-                <div className="post-page__body">{post.content}</div>
-                <PostStats
-                    views={post.views}
-                    likes={post.likes}
-                    dislikes={post.dislikes}
-                    commentsCount={post.commentsCount}
-                    isAuthenticated={!!user}
-                    reacting={reacting}
-                    onReact={handleReaction}
-                    isFavorite={isFavorite}
-                    favoriting={favoriting}
-                    onToggleFavorite={handleToggleFavorite}
-                />
-                {post.status === 'published' ? <Comments postId={post.id} /> : (
-                    <p className="post-page__draft-comments" role="status">
-                        Comments will be available when this post is published.
-                    </p>
-                )}
-            </div>
-        </article>
+            </article>
+        </>
     );
 };
 

@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
+import { faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_URL } from '../../config';
-import { Loader } from '../../components';
+import { Breadcrumbs, Loader } from '../../components';
 import type { CreatePostInput, Post } from '../../types';
 import './editPost.css';
 
@@ -41,7 +41,7 @@ export default function EditPost() {
 
     if (!canEdit) return <Navigate to={user ? `/user/${user.id}` : '/'} replace />;
     if (loading) return <Loader label="Loading post" />;
-    if (!post) return <section className="edit-post"><h1>Post not found</h1><Link to="/dashboard">Back to dashboard</Link></section>;
+    if (!post) return <section className="edit-post"><Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Dashboard', to: '/dashboard' }, { label: 'Edit post' }]} /><h1>Post not found</h1></section>;
     if (!isAdmin && post.userId !== user?.id) return <Navigate to="/dashboard" replace />;
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -79,7 +79,7 @@ export default function EditPost() {
 
     return (
         <section className="edit-post" data-testid="edit-post">
-            <Link className="edit-post__back" to="/dashboard"><FontAwesomeIcon icon={faArrowLeft} /> Back to dashboard</Link>
+            <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Dashboard', to: '/dashboard' }, { label: post.title }]} />
             <header className="edit-post__header"><p>Edit</p><h1>Edit post</h1><span>Update the post details and content.</span></header>
             <form className="edit-post__form" onSubmit={handleSubmit} data-testid="edit-post-form">
                 <label>Title<input name="title" data-testid="edit-post-title" defaultValue={post.title} required maxLength={200} /></label>

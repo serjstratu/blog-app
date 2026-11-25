@@ -106,7 +106,7 @@ describe('EditPost page', () => {
         renderEditPost(null, { id: '' });
 
         expect(await screen.findByRole('heading', { name: 'Post not found' })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: 'Back to dashboard' })).toHaveAttribute('href', '/dashboard');
+        expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
         expect(mockFetchResult).not.toHaveBeenCalled();
     });
 

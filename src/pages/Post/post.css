@@ -7,15 +7,8 @@
     background: #fff;
     box-shadow: 0 12px 36px rgb(15 23 42 / 6%);
 }
-.post-page__back {
-    display: inline-block;
-    margin: 24px 28px 16px;
-    color: #4f46e5;
-    font-weight: 600;
-    text-decoration: none;
-}
-.post-page__back:hover {
-    text-decoration: underline;
+.post-page > .breadcrumbs {
+    margin: 24px 28px 0;
 }
 .post-page__cover {
     display: block;
@@ -69,7 +62,7 @@
     .post-page__content {
         padding: 22px;
     }
-    .post-page__back {
+    .post-page > .breadcrumbs {
         margin: 20px 22px 14px;
     }
 }

@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
+import { faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import type { CreatePostInput } from '../../types';
 import { slugify } from '../../utils';
+import { Breadcrumbs } from '../../components';
 import './addPost.css';
 
 const AddPost = () => {
@@ -68,14 +69,11 @@ const AddPost = () => {
 
     return (
         <section className="add-post" data-testid="add-post">
-            <Link
-                className="add-post__back"
-                to={`/user/${user?.id}`}
-                data-testid="add-post-back"
-            >
-                <FontAwesomeIcon icon={faArrowLeft} />
-                Back to profile
-            </Link>
+            <Breadcrumbs items={[
+                { label: 'Home', to: '/' },
+                { label: 'Profile', to: `/user/${user?.id}` },
+                { label: 'Add post' },
+            ]} />
 
             <header className="add-post__header" data-testid="add-post-header">
                 <p>Create</p>

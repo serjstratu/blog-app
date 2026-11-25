@@ -93,13 +93,11 @@ describe('AddPost', () => {
             expect(screen.getByTestId('add-post-submit')).toBeInTheDocument();
         });
 
-        it('should render the back to profile link', () => {
+        it('should show profile breadcrumbs with the create page as the current item', () => {
             renderComponent();
 
-            expect(screen.getByTestId('add-post-back')).toHaveAttribute(
-                'href',
-                '/user/1'
-            );
+            expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/user/1');
+            expect(screen.getByTestId('breadcrumb-current')).toHaveTextContent('Add post');
         });
     });
 

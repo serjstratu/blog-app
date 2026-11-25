@@ -2,18 +2,6 @@
     width: min(100%, 780px);
     margin: 36px auto 64px;
 }
-.edit-post__back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 22px;
-    color: #4f46e5;
-    font-weight: 600;
-    text-decoration: none;
-}
-.edit-post__back:hover {
-    text-decoration: underline;
-}
 .edit-post__header {
     margin-bottom: 24px;
 }

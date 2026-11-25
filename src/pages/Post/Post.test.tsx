@@ -11,7 +11,10 @@ const { mockUseAuth, mockFetchResult, mockFindPostBySlug, mockToastError, mockTo
 vi.mock('../../providers/AuthProvider.tsx', () => ({ useAuth: mockUseAuth }));
 vi.mock('../../api/posts.ts', () => ({ findPostBySlug: mockFindPostBySlug }));
 vi.mock('react-toastify', () => ({ toast: { error: mockToastError, success: mockToastSuccess } }));
-vi.mock('../../components', () => ({ Comments: () => <div data-testid="post-comments" /> }));
+vi.mock('../../components', async () => {
+    const actual = await vi.importActual<typeof import('../../components')>('../../components');
+    return { ...actual, Comments: () => <div data-testid="post-comments" /> };
+});
 vi.mock('./component/PostStats/PostStats.tsx', () => ({
     default: ({ views, likes, dislikes, commentsCount, isAuthenticated, reacting, onReact, isFavorite, onToggleFavorite }: {
         views: number; likes: number; dislikes: number; commentsCount: number;
@@ -105,7 +108,7 @@ describe('Post page', () => {
         renderPost('/post/404');
 
         expect(await screen.findByRole('heading', { name: 'Post not found' })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: 'Back to blog' })).toHaveAttribute('href', '/blog');
+        expect(screen.getByRole('link', { name: 'Blog' })).toHaveAttribute('href', '/blog');
         expect(mockToastError).toHaveBeenCalledWith('Post request failed');
     });
 

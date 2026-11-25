@@ -15,12 +15,16 @@ const { mockUseAuth, mockFetchResult, mockFire, mockToastError, mockToastSuccess
 vi.mock('../../providers/AuthProvider', () => ({ useAuth: mockUseAuth }));
 vi.mock('sweetalert2', () => ({ default: { fire: mockFire } }));
 vi.mock('react-toastify', () => ({ toast: { error: mockToastError, success: mockToastSuccess } }));
-vi.mock('../../components', () => ({
-    Loader: () => <div role="status">Loading</div>,
-    Pagination: ({ currentPage, onPageChange }: { currentPage: number; onPageChange: (page: number) => void }) => (
-        <div data-testid="pagination"><button type="button" onClick={() => onPageChange(currentPage + 1)}>Next mock page</button></div>
-    ),
-}));
+vi.mock('../../components', async () => {
+    const actual = await vi.importActual<typeof import('../../components')>('../../components');
+    return {
+        ...actual,
+        Loader: () => <div role="status">Loading</div>,
+        Pagination: ({ currentPage, onPageChange }: { currentPage: number; onPageChange: (page: number) => void }) => (
+            <div data-testid="pagination"><button type="button" onClick={() => onPageChange(currentPage + 1)}>Next mock page</button></div>
+        ),
+    };
+});
 
 const pagination = {
     currentPage: 1, perPage: 20, totalItems: 1, totalPages: 1,

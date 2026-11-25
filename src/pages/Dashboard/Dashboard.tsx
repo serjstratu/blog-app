@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_URL, DEFAULT_PAGE_SIZE } from '../../config';
-import { Loader } from '../../components';
+import { Breadcrumbs, Loader } from '../../components';
 import type { Comment, CommentsResponse, Pagination as PaginationData, PostsResponse } from '../../types';
 import { DashComments, DashPosts } from './component';
 import './dashboard.css';
@@ -105,6 +105,7 @@ export default function Dashboard() {
 
     return (
         <section className="dashboard" aria-labelledby="dashboard-title">
+            <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Dashboard' }]} />
             <header className="dashboard__header">
                 <div><p className="dashboard__eyebrow">Administration</p><h1 id="dashboard-title">Dashboard</h1></div>
                 <Link className="dashboard__add" to="/add">＋ New post</Link>
