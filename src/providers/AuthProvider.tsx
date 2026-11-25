@@ -9,6 +9,7 @@ import {
 import type {AuthContextType, CreatePostInput, LoginRequest, LoginResponse,Comment,User} from "../types";
 import {authService} from "../services/authService.ts";
 import { API_URL } from '../config';
+import * as favoritesApi from '../api/favorites';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -233,6 +234,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return response.json() as Promise<{ postId: number; likes: number; dislikes: number }>;
     };
 
+    const getFavorites = useCallback(async (page?: number, limit?: number) => {
+        if (!session) throw new Error('You must be logged in to view favorites');
+        return favoritesApi.getFavorites(session.access_token, session.user.id, page, limit);
+    }, [session?.access_token]);
+
+    const addFavorite = async (postId: number) => {
+        if (!session) throw new Error('You must be logged in to save favorites');
+        return favoritesApi.addFavorite(session.access_token, postId);
+    };
+
+    const removeFavorite = async (postId: number) => {
+        if (!session) throw new Error('You must be logged in to update favorites');
+        return favoritesApi.removeFavorite(session.access_token, postId);
+    };
+
     const createPost = async (input: CreatePostInput): Promise<import('../types').Post> => {
         if (!session) throw new Error('You must be logged in to create posts');
         if (!session.user.roles.some((role) => ['admin', 'editor'].includes(role.toLowerCase()))) {
@@ -269,6 +285,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updatePost,
         reactToPost,
         createPost,
+        getFavorites,
+        addFavorite,
+        removeFavorite,
     };
 
     return (

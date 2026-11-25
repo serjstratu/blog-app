@@ -11,6 +11,9 @@ const defaultProps = {
     isAuthenticated: true,
     reacting: false,
     onReact: vi.fn(),
+    isFavorite: false,
+    favoriting: false,
+    onToggleFavorite: vi.fn(),
 };
 
 describe('PostStats', () => {
@@ -29,6 +32,19 @@ describe('PostStats', () => {
 
         expect(screen.getByTestId('post-like-button')).toBeInTheDocument();
         expect(screen.getByTestId('post-dislike-button')).toBeInTheDocument();
+        expect(screen.getByTestId('post-favorite-button')).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('toggles favorite state through the callback', async () => {
+        const onToggleFavorite = vi.fn();
+        const user = userEvent.setup();
+        render(<PostStats {...defaultProps} onToggleFavorite={onToggleFavorite} isFavorite />);
+
+        const button = screen.getByTestId('post-favorite-button');
+        expect(button).toHaveAttribute('aria-label', 'Remove from favorites');
+        expect(button).toHaveAttribute('aria-pressed', 'true');
+        await user.click(button);
+        expect(onToggleFavorite).toHaveBeenCalledOnce();
     });
 
     it('should render static reaction counts for unauthenticated users', () => {

@@ -275,6 +275,27 @@ describe('AuthProvider', () => {
         await expect(auth().createPost(input)).rejects.toThrow('Could not create post');
     });
 
+    it('loads favorites and adds or removes a favorite using the authenticated session', async () => {
+        seedSession();
+        const favorites = { postIds: [9], data: [post], pagination: { currentPage: 1, perPage: 20, totalItems: 1, totalPages: 1, hasNextPage: false, hasPreviousPage: false } };
+        mockFetch.mockResolvedValueOnce(apiResponse(favorites));
+        mountProvider();
+
+        await expect(auth().getFavorites(2, 10)).resolves.toEqual(favorites);
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/api/favorites?user_id=11&limit=10&offset=10', {
+            headers: { accept: '*/*', Authorization: 'Bearer stored-token' },
+        });
+        mockFetch.mockResolvedValue({ ok: true } as Response);
+        await auth().addFavorite(9);
+        expect(mockFetch).toHaveBeenLastCalledWith('http://localhost:8000/api/favorites/9', {
+            method: 'POST', headers: { accept: '*/*', Authorization: 'Bearer stored-token' },
+        });
+        await auth().removeFavorite(9);
+        expect(mockFetch).toHaveBeenLastCalledWith('http://localhost:8000/api/favorites/9', {
+            method: 'DELETE', headers: { accept: '*/*', Authorization: 'Bearer stored-token' },
+        });
+    });
+
     it('supports string and url avatar upload responses', async () => {
         seedSession();
         mockFetch

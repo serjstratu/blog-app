@@ -67,6 +67,13 @@
     background: #fff1f2;
 }
 
+.post-reaction--favorite:hover:not(:disabled),
+.post-reaction--favorite.is-active {
+    color: #a16207;
+    border-color: #facc15;
+    background: #fefce8;
+}
+
 .post-reaction svg {
     transition: transform 0.2s ease;
 }

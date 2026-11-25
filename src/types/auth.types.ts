@@ -1,4 +1,4 @@
-import type {Comment, Post, User} from './index.ts';
+import type {Comment, Pagination, Post, User} from './index.ts';
 
 export interface CreatePostInput {
     title: string;
@@ -46,4 +46,7 @@ export interface AuthContextType {
     updatePost: (postId: number, input: CreatePostInput) => Promise<Post>;
     reactToPost: (postId: number, reaction: 'like' | 'dislike') => Promise<{ likes: number; dislikes: number }>;
     createPost: (input: CreatePostInput) => Promise<Post>;
+    getFavorites: (page?: number, limit?: number) => Promise<{ postIds: number[]; data: Post[]; pagination: Pagination }>;
+    addFavorite: (postId: number) => Promise<void>;
+    removeFavorite: (postId: number) => Promise<void>;
 }

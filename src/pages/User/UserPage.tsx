@@ -17,15 +17,22 @@ import {UserAvatar, UserProfileForm} from "./components";
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import {formatDate} from "../../utils";
 import Loader from '../../components/loader/Loader.tsx';
+import Pagination from '../../components/pagination/Pagination.tsx';
+import { DEFAULT_PAGE_SIZE } from '../../config';
+import type { Pagination as PaginationData, Post } from '../../types';
 import './userPage.css';
 
 
 const UserPage = () => {
     const { id } = useParams();
-    const { user: currentUser, updateUser, uploadAvatar, refreshUser } = useAuth();
+    const { user: currentUser, updateUser, uploadAvatar, refreshUser, getFavorites } = useAuth();
     const [profile, setProfile] = useState(currentUser?.id === Number(id) ? currentUser : null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
+    const [favoritePosts, setFavoritePosts] = useState<Post[]>([]);
+    const [favoritesPagination, setFavoritesPagination] = useState<PaginationData | null>(null);
+    const [favoritesPage, setFavoritesPage] = useState(1);
+    const [favoritesLoading, setFavoritesLoading] = useState(false);
 
     useEffect(() => {
         if (!currentUser) {
@@ -51,6 +58,27 @@ const UserPage = () => {
     useEffect(() => {
         if (currentUser && currentUser.id === Number(id)) setProfile(currentUser);
     }, [currentUser, id]);
+
+    useEffect(() => {
+        if (!currentUser || currentUser.id !== Number(id)) {
+            setFavoritePosts([]);
+            setFavoritesPagination(null);
+            return;
+        }
+        let active = true;
+        setFavoritesLoading(true);
+        getFavorites(favoritesPage, DEFAULT_PAGE_SIZE)
+            .then((result) => {
+                if (!active) return;
+                setFavoritePosts(result.data);
+                setFavoritesPagination(result.pagination);
+            })
+            .catch((cause) => {
+                if (active) toast.error(cause instanceof Error ? cause.message : 'Could not load favorite posts');
+            })
+            .finally(() => { if (active) setFavoritesLoading(false); });
+        return () => { active = false; };
+    }, [currentUser?.id, id, favoritesPage, getFavorites]);
 
     if (!currentUser) return <Navigate to="/" replace />;
     if (loading) {
@@ -164,6 +192,33 @@ const UserPage = () => {
                     </dd>
                 </div>
             </dl>
+
+            {isOwnProfile && (
+                <section className="user-profile__favorites" aria-labelledby="user-favorites-title" data-testid="user-favorites">
+                    <h2 id="user-favorites-title">Favorite posts</h2>
+                    {favoritesLoading ? <Loader label="Loading favorite posts" /> : favoritePosts.length ? (
+                        <ul className="user-profile__favorite-list">
+                            {favoritePosts.map((post) => (
+                                <li key={post.id} className="user-profile__favorite-item">
+                                    <Link to={`/post/${post.slug || post.id}`} data-testid={`favorite-post-${post.id}`}>
+                                        {post.title}
+                                    </Link>
+                                    {post.excerpt && <p>{post.excerpt}</p>}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : <p data-testid="favorites-empty">No favorite posts yet.</p>}
+                    {favoritesPagination && favoritesPagination.totalPages > 1 && (
+                        <Pagination
+                            currentPage={favoritesPagination.currentPage}
+                            totalPages={favoritesPagination.totalPages}
+                            hasNextPage={favoritesPagination.hasNextPage}
+                            hasPreviousPage={favoritesPagination.hasPreviousPage}
+                            onPageChange={setFavoritesPage}
+                        />
+                    )}
+                </section>
+            )}
         </section>
     );
 };

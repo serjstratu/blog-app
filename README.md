@@ -104,7 +104,7 @@ Vite prints the local frontend URL in the terminal (typically `http://localhost:
 | `/about` | Project purpose and technology overview |
 | `/blog` | List of recent posts |
 | `/post/:id` | Post details loaded from the API; `:id` can be a post ID or slug |
-| `/user/:id` | User profile and profile editing |
+| `/user/:id` | User profile, profile editing, and the signed-in user's favorite posts |
 | `/add/` | Create a post (admin/editor roles only) |
 | `/dashboard` | Admin: browse posts and per-post comments. Editor: browse own posts only. |
 
@@ -127,6 +127,9 @@ The frontend currently calls these endpoints relative to `VITE_API_URL`:
 | `DELETE` | `/posts/{id}` | Delete a post from the dashboard (admin/editor roles) |
 | `POST` | `/posts/{id}/like` | Like a post |
 | `POST` | `/posts/{id}/dislike` | Dislike a post |
+| `GET` | `/favorites?user_id={id}&limit=20&offset=0` | Load the user's favorite post IDs, post details, and pagination |
+| `POST` | `/favorites/{post_id}` | Add a published post to the signed-in user's favorites |
+| `DELETE` | `/favorites/{post_id}` | Remove a post from the signed-in user's favorites |
 | `GET` | `/comments?postId={id}&limit=20&offset=0` | Load paginated comments and nested replies |
 | `POST` | `/posts/{id}/comments` | Add a comment or reply (`parentId` is optional/null) |
 | `DELETE` | `/comments/{id}` | Delete a comment (admin role) |

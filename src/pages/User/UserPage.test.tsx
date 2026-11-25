@@ -5,8 +5,8 @@ import type { User } from '../../types';
 import { API_ORIGIN } from '../../config';
 import UserPage from './UserPage';
 
-const { mockUseAuth, mockRefreshUser, mockUpdateUser, mockUploadAvatar, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
-    mockUseAuth: vi.fn(), mockRefreshUser: vi.fn(), mockUpdateUser: vi.fn(), mockUploadAvatar: vi.fn(),
+const { mockUseAuth, mockRefreshUser, mockUpdateUser, mockUploadAvatar, mockGetFavorites, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
+    mockUseAuth: vi.fn(), mockRefreshUser: vi.fn(), mockUpdateUser: vi.fn(), mockUploadAvatar: vi.fn(), mockGetFavorites: vi.fn(),
     mockToastError: vi.fn(), mockToastSuccess: vi.fn(),
 }));
 
@@ -42,10 +42,12 @@ describe('UserPage', () => {
         vi.clearAllMocks();
         mockUseAuth.mockReturnValue({
             user, updateUser: mockUpdateUser, uploadAvatar: mockUploadAvatar, refreshUser: mockRefreshUser,
+            getFavorites: mockGetFavorites,
         });
         mockRefreshUser.mockResolvedValue(user);
         mockUpdateUser.mockResolvedValue(undefined);
         mockUploadAvatar.mockResolvedValue(undefined);
+        mockGetFavorites.mockResolvedValue({ data: [], postIds: [], pagination: { currentPage: 1, perPage: 20, totalItems: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false } });
     });
 
     it('redirects guests home without requesting profile data', async () => {
@@ -155,7 +157,7 @@ describe('UserPage', () => {
     it('allows admins and editors to create posts from their profile', async () => {
         mockUseAuth.mockReturnValue({
             user: { ...user, roles: ['editor'] }, updateUser: mockUpdateUser,
-            uploadAvatar: mockUploadAvatar, refreshUser: mockRefreshUser,
+            uploadAvatar: mockUploadAvatar, refreshUser: mockRefreshUser, getFavorites: mockGetFavorites,
         });
         renderUserPage();
 
@@ -179,5 +181,28 @@ describe('UserPage', () => {
         fireEvent.change(screen.getByTestId('user-avatar-input'), { target: { files: [image] } });
 
         await waitFor(() => expect(mockUploadAvatar).toHaveBeenCalledWith(image));
+    });
+
+    it('shows favorite posts for the owner and links to their post pages', async () => {
+        const favorite = { id: 81, title: 'Saved article', slug: 'saved-article', excerpt: 'A short summary' };
+        mockGetFavorites.mockResolvedValue({
+            data: [favorite], postIds: [81],
+            pagination: { currentPage: 1, perPage: 20, totalItems: 1, totalPages: 1, hasNextPage: false, hasPreviousPage: false },
+        });
+        renderUserPage();
+
+        const link = await screen.findByTestId('favorite-post-81');
+        expect(link).toHaveTextContent('Saved article');
+        expect(link).toHaveAttribute('href', '/post/saved-article');
+        expect(screen.getByText('A short summary')).toBeInTheDocument();
+        expect(mockGetFavorites).toHaveBeenCalledWith(1, 20);
+    });
+
+    it('does not show the owner favorites section on another user profile', async () => {
+        mockRefreshUser.mockResolvedValue({ ...user, id: 13, name: 'Another User' });
+        renderUserPage(13);
+        expect(await screen.findByAltText("Another User's avatar")).toBeInTheDocument();
+        expect(screen.queryByTestId('user-favorites')).not.toBeInTheDocument();
+        expect(mockGetFavorites).not.toHaveBeenCalled();
     });
 });

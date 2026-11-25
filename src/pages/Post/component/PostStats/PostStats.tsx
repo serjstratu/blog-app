@@ -4,6 +4,7 @@ import {
     faThumbsDown,
     faEye,
     faComment,
+    faStar,
 } from '@fortawesome/free-solid-svg-icons';
 import './post-stats.css';
 
@@ -15,9 +16,12 @@ interface PostStatsProps {
     isAuthenticated: boolean;
     reacting: boolean;
     onReact: (reaction: 'like' | 'dislike') => void;
+    isFavorite: boolean;
+    favoriting: boolean;
+    onToggleFavorite: () => void;
 }
 
-const PostStats = ({views, likes, dislikes, commentsCount, isAuthenticated, reacting, onReact}: PostStatsProps) => {
+const PostStats = ({views, likes, dislikes, commentsCount, isAuthenticated, reacting, onReact, isFavorite, favoriting, onToggleFavorite}: PostStatsProps) => {
     return (
         <div className="post-page__stats" data-testid="post-stats">
             <span className="post-stat" data-testid="post-views">
@@ -27,6 +31,18 @@ const PostStats = ({views, likes, dislikes, commentsCount, isAuthenticated, reac
 
             {isAuthenticated ? (
                 <div className="post-page__reactions">
+                    <button
+                        type="button"
+                        data-testid="post-favorite-button"
+                        className={`post-reaction post-reaction--favorite${isFavorite ? ' is-active' : ''}`}
+                        onClick={onToggleFavorite}
+                        disabled={favoriting}
+                        aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                        aria-pressed={isFavorite}
+                    >
+                        <FontAwesomeIcon icon={faStar} />
+                        <span>{isFavorite ? 'Saved' : 'Save'}</span>
+                    </button>
                     <button
                         type="button"
                         data-testid="post-like-button"

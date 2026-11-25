@@ -4,18 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Post as PostData } from '../../types';
 import Post from './Post';
 
-const { mockUseAuth, mockGetJson, mockFindPostBySlug, mockToastError } = vi.hoisted(() => ({
-    mockUseAuth: vi.fn(), mockGetJson: vi.fn(), mockFindPostBySlug: vi.fn(), mockToastError: vi.fn(),
+const { mockUseAuth, mockGetJson, mockFindPostBySlug, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
+    mockUseAuth: vi.fn(), mockGetJson: vi.fn(), mockFindPostBySlug: vi.fn(), mockToastError: vi.fn(), mockToastSuccess: vi.fn(),
 }));
 vi.mock('../../providers/AuthProvider.tsx', () => ({ useAuth: mockUseAuth }));
 vi.mock('../../config/getJson.ts', () => ({ getJson: mockGetJson }));
 vi.mock('../../api/posts.ts', () => ({ findPostBySlug: mockFindPostBySlug }));
-vi.mock('react-toastify', () => ({ toast: { error: mockToastError } }));
+vi.mock('react-toastify', () => ({ toast: { error: mockToastError, success: mockToastSuccess } }));
 vi.mock('../../components', () => ({ Comments: () => <div data-testid="post-comments" /> }));
 vi.mock('./component/PostStats/PostStats.tsx', () => ({
-    default: ({ views, likes, dislikes, commentsCount, isAuthenticated, reacting, onReact }: {
+    default: ({ views, likes, dislikes, commentsCount, isAuthenticated, reacting, onReact, isFavorite, onToggleFavorite }: {
         views: number; likes: number; dislikes: number; commentsCount: number;
         isAuthenticated: boolean; reacting: boolean; onReact: (reaction: 'like' | 'dislike') => void;
+        isFavorite: boolean; onToggleFavorite: () => void;
     }) => (
         <div data-testid="post-stats">
             <span data-testid="stats-views">{views}</span>
@@ -25,6 +26,7 @@ vi.mock('./component/PostStats/PostStats.tsx', () => ({
             {isAuthenticated && <>
                 <button type="button" disabled={reacting} onClick={() => { onReact('like'); onReact('like'); }}>Like</button>
                 <button type="button" disabled={reacting} onClick={() => onReact('dislike')}>Dislike</button>
+                <button type="button" onClick={onToggleFavorite}>{isFavorite ? 'Remove favorite' : 'Add favorite'}</button>
             </>}
         </div>
     ),
@@ -56,7 +58,7 @@ function renderPost(pathname: string, state?: { createdPost?: PostData }) {
 describe('Post page', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost: vi.fn() });
+        mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost: vi.fn(), getFavorites: vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} }), addFavorite: vi.fn(), removeFavorite: vi.fn() });
     });
 
     it('renders a newly created draft from navigation state without requesting the hidden draft', async () => {
@@ -118,7 +120,7 @@ describe('Post page', () => {
         const reactToPost = vi.fn(() => new Promise<{ likes: number; dislikes: number }>((resolve) => {
             resolveReaction = resolve;
         }));
-        mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost });
+        mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost, getFavorites: vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} }), addFavorite: vi.fn(), removeFavorite: vi.fn() });
         mockGetJson.mockResolvedValue(publishedPost);
 
         renderPost(`/post/${publishedPost.id}`);
@@ -136,7 +138,7 @@ describe('Post page', () => {
 
     it('reports a failed like action and re-enables reaction buttons', async () => {
         const reactToPost = vi.fn().mockRejectedValue(new Error('Reaction failed'));
-        mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost });
+        mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost, getFavorites: vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} }), addFavorite: vi.fn(), removeFavorite: vi.fn() });
         mockGetJson.mockResolvedValue(publishedPost);
 
         renderPost(`/post/${publishedPost.id}`);
@@ -154,5 +156,18 @@ describe('Post page', () => {
         expect(await screen.findByRole('heading', { name: 'Post not found' })).toBeInTheDocument();
         expect(mockGetJson).not.toHaveBeenCalled();
         expect(mockFindPostBySlug).not.toHaveBeenCalled();
+    });
+
+    it('adds a published post to favorites and confirms the action', async () => {
+        const addFavorite = vi.fn().mockResolvedValue(undefined);
+        const getFavorites = vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} });
+        mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost: vi.fn(), getFavorites, addFavorite, removeFavorite: vi.fn() });
+        mockGetJson.mockResolvedValue(publishedPost);
+        renderPost(`/post/${publishedPost.id}`);
+
+        fireEvent.click(await screen.findByRole('button', { name: 'Add favorite' }));
+        await waitFor(() => expect(addFavorite).toHaveBeenCalledWith(publishedPost.id));
+        expect(mockToastSuccess).toHaveBeenCalledWith('Post added to favorites');
+        expect(await screen.findByRole('button', { name: 'Remove favorite' })).toBeInTheDocument();
     });
 });

@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import { API_URL } from '../../config';
 import { getJson } from '../../config/getJson.ts';
-import { findPostBySlug } from '../../api/posts.ts';
+import { findPostBySlug } from '../../api';
 import type { Post } from '../../types';
 import './post.css';
 import PostStats from "./component/PostStats/PostStats.tsx";
@@ -18,8 +18,10 @@ const Post = () => {
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [reacting, setReacting] = useState(false);
-    const { user, reactToPost } = useAuth();
+    const { user, reactToPost, getFavorites, addFavorite, removeFavorite } = useAuth();
     const reactingRef = useRef(false);
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [favoriting, setFavoriting] = useState(false);
 
     const handleReaction = async (reaction: 'like' | 'dislike') => {
         if (!post || reactingRef.current) return;
@@ -39,6 +41,41 @@ const Post = () => {
         } finally {
             reactingRef.current = false;
             setReacting(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!user || !post || post.status !== 'published') {
+            setIsFavorite(false);
+            return;
+        }
+        let active = true;
+        getFavorites(1).then((favorites) => {
+            if (active) setIsFavorite(favorites.postIds.includes(post.id));
+        }).catch((e: unknown) => {
+            console.error(e);
+            toast.error('Error while fetching favorites');
+        });
+        return () => { active = false; };
+    }, [user?.id, post?.id, post?.status, getFavorites]);
+
+    const handleToggleFavorite = async () => {
+        if (!post || favoriting) return;
+        setFavoriting(true);
+        try {
+            if (isFavorite) {
+                await removeFavorite(post.id);
+                setIsFavorite(false);
+                toast.success('Post removed from favorites');
+            } else {
+                await addFavorite(post.id);
+                setIsFavorite(true);
+                toast.success('Post added to favorites');
+            }
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Could not update favorites');
+        } finally {
+            setFavoriting(false);
         }
     };
 
@@ -94,6 +131,9 @@ const Post = () => {
                     isAuthenticated={!!user}
                     reacting={reacting}
                     onReact={handleReaction}
+                    isFavorite={isFavorite}
+                    favoriting={favoriting}
+                    onToggleFavorite={handleToggleFavorite}
                 />
                 {post.status === 'published' ? <Comments postId={post.id} /> : (
                     <p className="post-page__draft-comments" role="status">
