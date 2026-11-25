@@ -1,14 +1,14 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Post as PostData } from '../../types';
 import Post from './Post';
+import { renderWithQueryClient } from '../../test/renderWithQueryClient';
 
-const { mockUseAuth, mockGetJson, mockFindPostBySlug, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
-    mockUseAuth: vi.fn(), mockGetJson: vi.fn(), mockFindPostBySlug: vi.fn(), mockToastError: vi.fn(), mockToastSuccess: vi.fn(),
+const { mockUseAuth, mockFetchResult, mockFindPostBySlug, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
+    mockUseAuth: vi.fn(), mockFetchResult: vi.fn(), mockFindPostBySlug: vi.fn(), mockToastError: vi.fn(), mockToastSuccess: vi.fn(),
 }));
 vi.mock('../../providers/AuthProvider.tsx', () => ({ useAuth: mockUseAuth }));
-vi.mock('../../config/getJson.ts', () => ({ getJson: mockGetJson }));
 vi.mock('../../api/posts.ts', () => ({ findPostBySlug: mockFindPostBySlug }));
 vi.mock('react-toastify', () => ({ toast: { error: mockToastError, success: mockToastSuccess } }));
 vi.mock('../../components', () => ({ Comments: () => <div data-testid="post-comments" /> }));
@@ -45,7 +45,7 @@ const publishedPost: PostData = {
 };
 
 function renderPost(pathname: string, state?: { createdPost?: PostData }) {
-    return render(
+    return renderWithQueryClient(
         <MemoryRouter initialEntries={[{ pathname, state }] }>
             <Routes>
                 <Route path="/post/:id" element={<Post />} />
@@ -58,6 +58,9 @@ function renderPost(pathname: string, state?: { createdPost?: PostData }) {
 describe('Post page', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.stubGlobal('fetch', vi.fn((url: string) => mockFetchResult(url).then((data: unknown) => ({
+            ok: true, status: 200, json: () => Promise.resolve(data),
+        }))));
         mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost: vi.fn(), getFavorites: vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} }), addFavorite: vi.fn(), removeFavorite: vi.fn() });
     });
 
@@ -68,17 +71,17 @@ describe('Post page', () => {
         expect(screen.getByText(createdDraft.content)).toBeInTheDocument();
         expect(screen.getByRole('status')).toHaveTextContent('Comments will be available when this post is published.');
         expect(screen.queryByTestId('post-comments')).not.toBeInTheDocument();
-        expect(mockGetJson).not.toHaveBeenCalled();
+        expect(mockFetchResult).not.toHaveBeenCalled();
         expect(mockFindPostBySlug).not.toHaveBeenCalled();
     });
 
     it('loads a published post by numeric id and renders its details and comments', async () => {
-        mockGetJson.mockResolvedValue(publishedPost);
+        mockFetchResult.mockResolvedValue(publishedPost);
 
         renderPost(`/post/${publishedPost.id}`);
 
         expect(await screen.findByRole('heading', { name: publishedPost.title })).toBeInTheDocument();
-        expect(mockGetJson).toHaveBeenCalledWith(`http://localhost:8000/api/posts/${publishedPost.id}`);
+        expect(mockFetchResult).toHaveBeenCalledWith(`http://localhost:8000/api/posts/${publishedPost.id}`);
         expect(screen.getByAltText('')).toHaveAttribute('src', publishedPost.image);
         expect(screen.getByText(publishedPost.excerpt!)).toBeInTheDocument();
         expect(screen.getByText('Featured')).toBeInTheDocument();
@@ -87,17 +90,17 @@ describe('Post page', () => {
 
     it('resolves a slug to a post and then loads its full details', async () => {
         mockFindPostBySlug.mockResolvedValue({ ...publishedPost, id: publishedPost.id });
-        mockGetJson.mockResolvedValue(publishedPost);
+        mockFetchResult.mockResolvedValue(publishedPost);
 
         renderPost(`/post/${publishedPost.slug}`);
 
         expect(await screen.findByRole('heading', { name: publishedPost.title })).toBeInTheDocument();
         expect(mockFindPostBySlug).toHaveBeenCalledWith(publishedPost.slug);
-        expect(mockGetJson).toHaveBeenCalledWith(`http://localhost:8000/api/posts/${publishedPost.id}`);
+        expect(mockFetchResult).toHaveBeenCalledWith(`http://localhost:8000/api/posts/${publishedPost.id}`);
     });
 
     it('shows a not-found state and a toast when loading the post fails', async () => {
-        mockGetJson.mockRejectedValue(new Error('Post request failed'));
+        mockFetchResult.mockRejectedValue(new Error('Post request failed'));
 
         renderPost('/post/404');
 
@@ -107,7 +110,7 @@ describe('Post page', () => {
     });
 
     it('uses a fallback toast for non-Error loading failures', async () => {
-        mockGetJson.mockRejectedValue('unexpected');
+        mockFetchResult.mockRejectedValue('unexpected');
 
         renderPost('/post/404');
 
@@ -121,7 +124,7 @@ describe('Post page', () => {
             resolveReaction = resolve;
         }));
         mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost, getFavorites: vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} }), addFavorite: vi.fn(), removeFavorite: vi.fn() });
-        mockGetJson.mockResolvedValue(publishedPost);
+        mockFetchResult.mockResolvedValue(publishedPost);
 
         renderPost(`/post/${publishedPost.id}`);
         await screen.findByRole('heading', { name: publishedPost.title });
@@ -139,7 +142,7 @@ describe('Post page', () => {
     it('reports a failed like action and re-enables reaction buttons', async () => {
         const reactToPost = vi.fn().mockRejectedValue(new Error('Reaction failed'));
         mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost, getFavorites: vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} }), addFavorite: vi.fn(), removeFavorite: vi.fn() });
-        mockGetJson.mockResolvedValue(publishedPost);
+        mockFetchResult.mockResolvedValue(publishedPost);
 
         renderPost(`/post/${publishedPost.id}`);
         await screen.findByRole('heading', { name: publishedPost.title });
@@ -154,7 +157,7 @@ describe('Post page', () => {
         renderPost('/post');
 
         expect(await screen.findByRole('heading', { name: 'Post not found' })).toBeInTheDocument();
-        expect(mockGetJson).not.toHaveBeenCalled();
+        expect(mockFetchResult).not.toHaveBeenCalled();
         expect(mockFindPostBySlug).not.toHaveBeenCalled();
     });
 
@@ -162,7 +165,7 @@ describe('Post page', () => {
         const addFavorite = vi.fn().mockResolvedValue(undefined);
         const getFavorites = vi.fn().mockResolvedValue({ postIds: [], data: [], pagination: {} });
         mockUseAuth.mockReturnValue({ user: { id: 1 }, reactToPost: vi.fn(), getFavorites, addFavorite, removeFavorite: vi.fn() });
-        mockGetJson.mockResolvedValue(publishedPost);
+        mockFetchResult.mockResolvedValue(publishedPost);
         renderPost(`/post/${publishedPost.id}`);
 
         fireEvent.click(await screen.findByRole('button', { name: 'Add favorite' }));

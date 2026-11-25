@@ -1,10 +1,10 @@
 import {useEffect, useRef, useState} from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider.tsx';
 import { API_URL } from '../../config';
-import { getJson } from '../../config/getJson.ts';
 import { findPostBySlug } from '../../api';
 import type { Post } from '../../types';
 import './post.css';
@@ -15,11 +15,28 @@ const Post = () => {
     const { id: slugOrId } = useParams();
     const location = useLocation();
     const createdPost = (location.state as { createdPost?: Post } | null)?.createdPost;
-    const [post, setPost] = useState<Post | null>(null);
-    const [loading, setLoading] = useState(true);
     const [reacting, setReacting] = useState(false);
     const { user, reactToPost, getFavorites, addFavorite, removeFavorite } = useAuth();
     const reactingRef = useRef(false);
+    const queryClient = useQueryClient();
+    const hasCreatedPost = Boolean(createdPost && slugOrId && (createdPost.slug === slugOrId || String(createdPost.id) === slugOrId));
+    const postQuery = useQuery({
+        queryKey: ['post', slugOrId],
+        enabled: Boolean(slugOrId && !hasCreatedPost),
+        initialData: hasCreatedPost ? createdPost : undefined,
+        queryFn: async () => {
+            let postId = slugOrId!;
+            if (!/^\d+$/.test(postId)) {
+                const matchedPost = await findPostBySlug(postId);
+                postId = String(matchedPost.id);
+            }
+            const response = await fetch(`${API_URL}/posts/${postId}`, { headers: { accept: '*/*' } });
+            if (!response.ok) throw new Error(`Request failed (${response.status})`);
+            return response.json() as Promise<Post>;
+        },
+    });
+    const post = hasCreatedPost ? createdPost! : postQuery.data ?? null;
+    const loading = Boolean(slugOrId && !post && postQuery.isPending);
     const [isFavorite, setIsFavorite] = useState(false);
     const [favoriting, setFavoriting] = useState(false);
 
@@ -31,7 +48,7 @@ const Post = () => {
 
         try {
             const counts = await reactToPost(post.id, reaction);
-            setPost(current => current ? { ...current, ...counts } : current);
+            queryClient.setQueryData<Post>(['post', slugOrId], (current) => current ? { ...current, ...counts } : current);
         } catch (error) {
             toast.error(
                 error instanceof Error
@@ -80,30 +97,8 @@ const Post = () => {
     };
 
     useEffect(() => {
-        if (!slugOrId) {
-            setLoading(false);
-            return;
-        }
-        if (createdPost && (createdPost.slug === slugOrId || String(createdPost.id) === slugOrId)) {
-            setPost(createdPost);
-            setLoading(false);
-            return;
-        }
-        let active = true;
-        setLoading(true);
-        const postRequest = /^\d+$/.test(slugOrId)
-            ? getJson<Post>(`${API_URL}/posts/${slugOrId}`)
-            : findPostBySlug(slugOrId).then((matchedPost) =>
-                getJson<Post>(`${API_URL}/posts/${matchedPost.id}`),
-            );
-        postRequest
-            .then((data) => { if (active) setPost(data); })
-            .catch((error: unknown) => {
-                if (active) toast.error(error instanceof Error ? error.message : 'Could not load this post');
-            })
-            .finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
-    }, [slugOrId, createdPost]);
+        if (postQuery.isError) toast.error(postQuery.error instanceof Error ? postQuery.error.message : 'Could not load this post');
+    }, [postQuery.isError, postQuery.error]);
 
     if (loading) return <section className="post-page"><p>Loading post…</p></section>;
     if (!post) return <section className="post-page"><h1>Post not found</h1><Link to="/blog">Back to blog</Link></section>;

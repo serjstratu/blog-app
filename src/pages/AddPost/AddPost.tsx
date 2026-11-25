@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,6 +12,7 @@ import './addPost.css';
 const AddPost = () => {
     const { user, createPost } = useAuth();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [title, setTitle] = useState('');
     const [slug, setSlug] = useState('');
     const [slugEdited, setSlugEdited] = useState(false);
@@ -47,6 +49,10 @@ const AddPost = () => {
         setSubmitting(true);
         try {
             const post = await createPost(input);
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['posts'] }),
+                queryClient.invalidateQueries({ queryKey: ['dashboard-posts'] }),
+            ]);
             toast.success('Post created successfully.');
             navigate(post.id ? `/post/${post.slug || post.id}` : '/blog', {
                 state: { createdPost: post },

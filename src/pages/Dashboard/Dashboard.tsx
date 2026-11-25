@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_URL, DEFAULT_PAGE_SIZE } from '../../config';
-import { getJson } from '../../config/getJson';
 import { Loader } from '../../components';
-import type { Comment, CommentsResponse, Pagination as PaginationData, Post, PostsResponse } from '../../types';
+import type { Comment, CommentsResponse, Pagination as PaginationData, PostsResponse } from '../../types';
 import { DashComments, DashPosts } from './component';
 import './dashboard.css';
 
@@ -15,67 +15,58 @@ type DashboardTab = 'posts' | 'comments';
 export default function Dashboard() {
     const { user, accessToken, deletePost, deleteComment } = useAuth();
     const [tab, setTab] = useState<DashboardTab>('posts');
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [comments, setComments] = useState<Comment[]>([]);
-    const [postPagination, setPostPagination] = useState<PaginationData | null>(null);
-    const [commentPagination, setCommentPagination] = useState<PaginationData | null>(null);
     const [postPage, setPostPage] = useState(1);
     const [commentPage, setCommentPage] = useState(1);
     const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<string | null>(null);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const isAdmin = user?.roles.some((role) => role.toLowerCase() === 'admin') ?? false;
     const isEditor = user?.roles.some((role) => role.toLowerCase() === 'editor') ?? false;
     const canAccessDashboard = isAdmin || isEditor;
 
-    useEffect(() => {
-        if (!canAccessDashboard || !accessToken) return;
-        let active = true;
-        setLoading(true);
+    const postsQuery = useQuery({
+        queryKey: ['dashboard-posts', user?.id, isAdmin, isEditor, postPage],
+        enabled: canAccessDashboard && Boolean(accessToken),
+        queryFn: async () => {
         const offset = (postPage - 1) * DEFAULT_PAGE_SIZE;
         const query = new URLSearchParams({ limit: String(DEFAULT_PAGE_SIZE), offset: String(offset) });
         query.set('include_unpublished', 'true');
         if (isEditor && !isAdmin && user) query.set('user_id', String(user.id));
-        getJson<PostsResponse>(`${API_URL}/posts?${query.toString()}`, {
-            accept: '*/*', Authorization: `Bearer ${accessToken}`,
-        }).then((response) => {
-            if (!active) return;
-            setPosts(response.data);
-            setPostPagination(response.pagination);
-        }).catch((error: unknown) => {
-            if (active) toast.error(error instanceof Error ? error.message : 'Could not load posts');
-        }).finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
-    }, [canAccessDashboard, isAdmin, isEditor, user?.id, accessToken, postPage]);
+        const response = await fetch(`${API_URL}/posts?${query.toString()}`, {
+            headers: { accept: '*/*', Authorization: `Bearer ${accessToken}` },
+        });
+        if (!response.ok) throw new Error(`Request failed (${response.status})`);
+        return response.json() as Promise<PostsResponse>;
+        },
+    });
+
+    const commentsQuery = useQuery({
+        queryKey: ['dashboard-comments', selectedPostId, commentPage],
+        enabled: isAdmin && Boolean(accessToken) && selectedPostId !== null,
+        queryFn: async () => {
+        const offset = (commentPage - 1) * DEFAULT_PAGE_SIZE;
+        const response = await fetch(`${API_URL}/comments?postId=${selectedPostId}&limit=${DEFAULT_PAGE_SIZE}&offset=${offset}`, {
+            headers: { accept: '*/*', Authorization: `Bearer ${accessToken}` },
+        });
+        if (!response.ok) throw new Error(`Request failed (${response.status})`);
+        return response.json() as Promise<Comment[] | CommentsResponse>;
+        },
+    });
+
+    const posts = postsQuery.data?.data ?? [];
+    const postPagination = postsQuery.data?.pagination ?? null;
+    const commentResult = commentsQuery.data;
+    const comments = Array.isArray(commentResult) ? commentResult : commentResult?.data ?? [];
+    const commentPagination: PaginationData | null = commentResult && !Array.isArray(commentResult) ? commentResult.pagination : null;
+    const loading = postsQuery.isPending || (tab === 'comments' && selectedPostId !== null && commentsQuery.isPending);
 
     useEffect(() => {
-        if (!isAdmin || !accessToken) return;
-        if (selectedPostId === null) {
-            setComments([]);
-            setCommentPagination(null);
-            setLoading(false);
-            return;
-        }
-        let active = true;
-        setLoading(true);
-        const offset = (commentPage - 1) * DEFAULT_PAGE_SIZE;
-        getJson<Comment[] | CommentsResponse>(`${API_URL}/comments?postId=${selectedPostId}&limit=${DEFAULT_PAGE_SIZE}&offset=${offset}`, {
-            accept: '*/*', Authorization: `Bearer ${accessToken}`,
-        }).then((response) => {
-            if (!active) return;
-            if (Array.isArray(response)) {
-                setComments(response);
-                setCommentPagination(null);
-            } else {
-                setComments(response.data);
-                setCommentPagination(response.pagination);
-            }
-        }).catch((error: unknown) => {
-            if (active) toast.error(error instanceof Error ? error.message : 'Could not load comments');
-        }).finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
-    }, [isAdmin, accessToken, commentPage, selectedPostId]);
+        if (postsQuery.isError) toast.error(postsQuery.error instanceof Error ? postsQuery.error.message : 'Could not load posts');
+    }, [postsQuery.isError, postsQuery.error]);
+    useEffect(() => {
+        if (commentsQuery.isError) toast.error(commentsQuery.error instanceof Error ? commentsQuery.error.message : 'Could not load comments');
+    }, [commentsQuery.isError, commentsQuery.error]);
 
     if (!user || !canAccessDashboard) return <Navigate to="/" replace />;
 
@@ -98,11 +89,11 @@ export default function Dashboard() {
         try {
             if (kind === 'posts') {
                 await deletePost(id);
-                setPosts((current) => current.filter((post) => post.id !== id));
+                queryClient.setQueryData<PostsResponse>(['dashboard-posts', user?.id, isAdmin, isEditor, postPage], (current) => current ? { ...current, data: current.data.filter((post) => post.id !== id) } : current);
                 toast.success('Post deleted.');
             } else {
                 await deleteComment(id);
-                setComments((current) => current.filter((comment) => comment.id !== id));
+                queryClient.setQueryData<Comment[] | CommentsResponse>(['dashboard-comments', selectedPostId, commentPage], (current) => Array.isArray(current) ? current.filter((comment) => comment.id !== id) : current ? { ...current, data: current.data.filter((comment) => comment.id !== id) } : current);
                 toast.success('Comment deleted.');
             }
         } catch (error) {

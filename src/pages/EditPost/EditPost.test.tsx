@@ -1,14 +1,14 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Post } from '../../types';
 import EditPost from './EditPost';
+import { renderWithQueryClient } from '../../test/renderWithQueryClient';
 
-const { mockUseAuth, mockGetJson, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
-    mockUseAuth: vi.fn(), mockGetJson: vi.fn(), mockToastError: vi.fn(), mockToastSuccess: vi.fn(),
+const { mockUseAuth, mockFetchResult, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
+    mockUseAuth: vi.fn(), mockFetchResult: vi.fn(), mockToastError: vi.fn(), mockToastSuccess: vi.fn(),
 }));
 vi.mock('../../providers/AuthProvider', () => ({ useAuth: mockUseAuth }));
-vi.mock('../../config/getJson', () => ({ getJson: mockGetJson }));
 vi.mock('react-toastify', () => ({ toast: { error: mockToastError, success: mockToastSuccess } }));
 
 const post: Post = {
@@ -20,7 +20,7 @@ const post: Post = {
 
 function renderEditPost(initialPost: Post | null = post, options: { id?: string; user?: { id: number; roles: string[] } } = {}) {
     const postId = options.id ?? String(post.id);
-    return render(
+    return renderWithQueryClient(
         <MemoryRouter initialEntries={[{
             pathname: `/post/edit/${postId}`,
             state: initialPost ? { post: initialPost } : null,
@@ -42,6 +42,9 @@ describe('EditPost page', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) => mockFetchResult(url, init?.headers).then((data: unknown) => ({
+            ok: true, status: 200, json: () => Promise.resolve(data),
+        }))));
         mockUseAuth.mockReturnValue({ user: { id: 11, roles: ['editor'] }, updatePost });
     });
 
@@ -52,15 +55,15 @@ describe('EditPost page', () => {
         expect(screen.getByTestId('edit-post-title')).toHaveValue(post.title);
         expect(screen.getByTestId('edit-post-content')).toHaveValue(post.content);
         expect(screen.getByTestId('edit-post-tags')).toHaveValue('react, blog');
-        expect(mockGetJson).not.toHaveBeenCalled();
+        expect(mockFetchResult).not.toHaveBeenCalled();
     });
 
     it('loads the post from the API when opened directly', async () => {
-        mockGetJson.mockResolvedValue(post);
+        mockFetchResult.mockResolvedValue(post);
         renderEditPost(null);
 
         expect(await screen.findByTestId('edit-post-title')).toHaveValue(post.title);
-        expect(mockGetJson).toHaveBeenCalledWith(expect.stringContaining(`/posts/${post.id}`));
+        expect(mockFetchResult).toHaveBeenCalledWith(expect.stringContaining(`/posts/${post.id}`), expect.anything());
     });
 
     it('submits changes and returns to the dashboard', async () => {
@@ -88,7 +91,7 @@ describe('EditPost page', () => {
         mockUseAuth.mockReturnValue({ user: null, updatePost });
         renderEditPost();
         expect(await screen.findByText('Home route')).toBeInTheDocument();
-        expect(mockGetJson).not.toHaveBeenCalled();
+        expect(mockFetchResult).not.toHaveBeenCalled();
     });
 
     it('redirects users without edit roles to their profile', async () => {
@@ -96,7 +99,7 @@ describe('EditPost page', () => {
         renderEditPost();
 
         expect(await screen.findByText('User profile')).toBeInTheDocument();
-        expect(mockGetJson).not.toHaveBeenCalled();
+        expect(mockFetchResult).not.toHaveBeenCalled();
     });
 
     it('shows a not-found state without an id and skips the API request', async () => {
@@ -104,11 +107,11 @@ describe('EditPost page', () => {
 
         expect(await screen.findByRole('heading', { name: 'Post not found' })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'Back to dashboard' })).toHaveAttribute('href', '/dashboard');
-        expect(mockGetJson).not.toHaveBeenCalled();
+        expect(mockFetchResult).not.toHaveBeenCalled();
     });
 
     it('shows an error notification and not-found state when loading fails', async () => {
-        mockGetJson.mockRejectedValue(new Error('Cannot load post'));
+        mockFetchResult.mockRejectedValue(new Error('Cannot load post'));
         renderEditPost(null);
 
         expect(await screen.findByRole('heading', { name: 'Post not found' })).toBeInTheDocument();
@@ -116,7 +119,7 @@ describe('EditPost page', () => {
     });
 
     it('uses a fallback notification when loading fails with an unknown value', async () => {
-        mockGetJson.mockRejectedValue('unexpected');
+        mockFetchResult.mockRejectedValue('unexpected');
         renderEditPost(null);
 
         expect(await screen.findByRole('heading', { name: 'Post not found' })).toBeInTheDocument();

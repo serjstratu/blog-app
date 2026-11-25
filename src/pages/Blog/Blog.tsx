@@ -1,62 +1,77 @@
-
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { API_URL, DEFAULT_PAGE_SIZE } from '../../config';
-import { getJson } from '../../config/getJson';
 import type { Pagination as PaginationType, Post, PostsResponse } from '../../types';
 import { Loader, Pagination } from '../../components';
 import { BlogItem } from './components';
 import './blog.css';
 
+const fetchPosts = async (
+    page: number,
+    tagFilter: string,
+): Promise<PostsResponse> => {
+    const query = new URLSearchParams({
+        limit: String(DEFAULT_PAGE_SIZE),
+        offset: String((page - 1) * DEFAULT_PAGE_SIZE),
+    });
+
+    if (tagFilter) query.set('tags', tagFilter);
+
+    const response = await fetch(`${API_URL}/posts?${query}`);
+
+    if (!response.ok) {
+        throw new Error(`Request failed (${response.status})`);
+    }
+
+    return response.json();
+};
+
 const Blog = () => {
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [pagination, setPagination] = useState<PaginationType | null>(null);
-    const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
     const tagFilter = searchParams.get('tag')?.trim().replace(/^#/, '') ?? '';
 
+    const [paginationState, setPaginationState] = useState({
+        tagFilter,
+        page: 1,
+    });
+
+    const page = paginationState.tagFilter === tagFilter
+        ? paginationState.page
+        : 1;
+
+    const {
+        data,
+        isPending,
+        isError,
+        error,
+        isFetching,
+    } = useQuery({
+        queryKey: ['posts', page, tagFilter],
+        queryFn: () => fetchPosts(page, tagFilter),
+    });
+
     useEffect(() => {
-        let active = true;
-        setLoading(true);
-        const offset = (page - 1) * DEFAULT_PAGE_SIZE;
-        const query = new URLSearchParams({
-            limit: String(DEFAULT_PAGE_SIZE),
-            offset: String(offset),
+        if (isError) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Could not load blog posts',
+            );
+        }
+    }, [isError, error]);
+
+    const posts: Post[] = data?.data ?? [];
+    const pagination: PaginationType | null = data?.pagination ?? null;
+
+    const handlePageChange = (nextPage: number) => {
+        setPaginationState({
+            tagFilter,
+            page: nextPage,
         });
-
-        if (tagFilter) query.set('tags', tagFilter);
-
-        getJson<PostsResponse>(`${API_URL}/posts?${query.toString()}`)
-            .then((result) => {
-                if (active) {
-                    setPosts(result.data);
-                    setPagination(result.pagination);
-                }
-            })
-            .catch((error: unknown) => {
-                if (active) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : 'Could not load blog posts',
-                    );
-                }
-            })
-            .finally(() => {
-                if (active) setLoading(false);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [page, tagFilter]);
-
-    useEffect(() => {
-        setPage(1);
-    }, [tagFilter]);
+    };
 
     return (
         <section className="blog-page" data-testid="blog-page">
@@ -67,10 +82,7 @@ const Blog = () => {
             </header>
 
             {tagFilter && (
-                <p
-                    className="blog-tag-search__active"
-                    data-testid="blog-tag-filter"
-                >
+                <p className="blog-tag-search__active" data-testid="blog-tag-filter">
                     Filtered by tag: <strong>{tagFilter}</strong>{' '}
                     <Link to="/blog" data-testid="blog-clear-filter">
                         Clear
@@ -78,7 +90,7 @@ const Blog = () => {
                 </p>
             )}
 
-            {loading ? (
+            {isPending ? (
                 <div data-testid="blog-loader">
                     <Loader size="large" label="Loading posts" />
                 </div>
@@ -99,8 +111,8 @@ const Blog = () => {
                                 totalPages={pagination.totalPages}
                                 hasNextPage={pagination.hasNextPage}
                                 hasPreviousPage={pagination.hasPreviousPage}
-                                disabled={loading}
-                                onPageChange={setPage}
+                                disabled={isFetching}
+                                onPageChange={handlePageChange}
                             />
                         </div>
                     )}

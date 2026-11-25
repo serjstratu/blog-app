@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import AddPost from './AddPost';
+import { renderWithQueryClient } from '../../test/renderWithQueryClient';
 import type { CreatePostInput } from '../../types';
 
 const mocks = vi.hoisted(() => ({
@@ -42,7 +43,7 @@ describe('AddPost', () => {
             createPost: mockCreatePost,
         });
 
-        return render(
+        return renderWithQueryClient(
             <MemoryRouter initialEntries={['/add-post']}>
                 <Routes>
                     <Route path="/add-post" element={<AddPost />} />

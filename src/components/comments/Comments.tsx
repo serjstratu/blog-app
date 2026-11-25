@@ -1,9 +1,9 @@
-import {useEffect, useState, type FormEvent, type ReactNode, useRef} from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { API_ORIGIN, API_URL, DEFAULT_PAGE_SIZE } from '../../config';
-import { getJson } from '../../config/getJson';
 import {Loader, Pagination} from "../index.ts";
 import { sortCommentsByCreatedAt } from "../../utils";
 import { useAuth } from '../../providers/AuthProvider';
@@ -14,40 +14,35 @@ interface CommentsProps {
 }
 
 const Comments = ({ postId }: CommentsProps) => {
-    const [comments, setComments] = useState<Comment[]>([]);
-    const [pagination, setPagination] = useState<PaginationData | null>(null);
     const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(true);
     const [content, setContent] = useState('');
     const [sending, setSending] = useState(false);
-    const [refreshKey, setRefreshKey] = useState(0);
     const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
     const { user, createComment, deleteComment } = useAuth();
+    const queryClient = useQueryClient();
     const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
-    useEffect(() => {
-        let active = true;
-        setLoading(true);
+    const commentsQuery = useQuery({
+        queryKey: ['comments', postId, page],
+        queryFn: async () => {
         const offset = (page - 1) * DEFAULT_PAGE_SIZE;
-        getJson<Comment[] | CommentsResponse>(`${API_URL}/comments?postId=${postId}&limit=${DEFAULT_PAGE_SIZE}&offset=${offset}`)
-            .then((result) => {
-                if (!active) return;
-                if (Array.isArray(result)) {
-                    setComments(result);
-                    setPagination(null);
-                } else {
-                    setComments(result.data);
-                    setPagination(result.pagination);
-                }
-            })
-            .catch((error: unknown) => {
-                if (active) toast.error(error instanceof Error ? error.message : 'Could not load comments');
-            })
-            .finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
-    }, [postId, page, refreshKey]);
+        const response = await fetch(`${API_URL}/comments?postId=${postId}&limit=${DEFAULT_PAGE_SIZE}&offset=${offset}`, { headers: { accept: '*/*' } });
+        if (!response.ok) throw new Error(`Request failed (${response.status})`);
+        return response.json() as Promise<Comment[] | CommentsResponse>;
+        },
+    });
+    const loading = commentsQuery.isPending;
+    const result = commentsQuery.data;
+    const comments = Array.isArray(result) ? result : result?.data ?? [];
+    const pagination: PaginationData | null = result && !Array.isArray(result) ? result.pagination : null;
+
+    useEffect(() => {
+        if (commentsQuery.isError) {
+            toast.error(commentsQuery.error instanceof Error ? commentsQuery.error.message : 'Could not load comments');
+        }
+    }, [commentsQuery.isError, commentsQuery.error]);
 
     useEffect(() => {
         if (loading || !window.location.hash.startsWith('#comment-')) return;
@@ -71,7 +66,7 @@ const Comments = ({ postId }: CommentsProps) => {
             setContent('');
             if (!replyingTo) setPage(1);
             setReplyingTo(null);
-            setRefreshKey((current) => current + 1);
+            await queryClient.invalidateQueries({ queryKey: ['comments', postId] });
             toast.success(replyingTo ? 'Reply added.' : 'Comment added.');
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Could not add comment');
@@ -99,7 +94,7 @@ const Comments = ({ postId }: CommentsProps) => {
 
         try {
             await deleteComment(commentId);
-            setRefreshKey((current) => current + 1);
+            await queryClient.invalidateQueries({ queryKey: ['comments', postId] });
             toast.success('Comment deleted.');
         } catch (error) {
             toast.error(

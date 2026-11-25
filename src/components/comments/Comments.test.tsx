@@ -1,12 +1,12 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Comments from './Comments';
+import { renderWithQueryClient } from '../../test/renderWithQueryClient';
 
-const { mockGetJson, mockUseAuth, mockToastError, mockToastSuccess, mockSwalFire } = vi.hoisted(() => ({
-    mockGetJson: vi.fn(), mockUseAuth: vi.fn(), mockToastError: vi.fn(), mockToastSuccess: vi.fn(), mockSwalFire: vi.fn(),
+const { mockFetchResult, mockUseAuth, mockToastError, mockToastSuccess, mockSwalFire } = vi.hoisted(() => ({
+    mockFetchResult: vi.fn(), mockUseAuth: vi.fn(), mockToastError: vi.fn(), mockToastSuccess: vi.fn(), mockSwalFire: vi.fn(),
 }));
 
-vi.mock('../../config/getJson', () => ({ getJson: mockGetJson }));
 vi.mock('../../providers/AuthProvider', () => ({ useAuth: mockUseAuth }));
 vi.mock('react-toastify', () => ({ toast: { error: mockToastError, success: mockToastSuccess } }));
 vi.mock('sweetalert2', () => ({ default: { fire: mockSwalFire } }));
@@ -37,7 +37,7 @@ const anotherComment = {
     deletedAt: '2026-11-24T10:01:00Z', replies: [], author_name: 'Former User',
 };
 
-const renderComments = () => render(<Comments postId={7} />);
+const renderComments = () => renderWithQueryClient(<Comments postId={7} />);
 
 describe('Comments', () => {
     const createComment = vi.fn();
@@ -45,8 +45,11 @@ describe('Comments', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.stubGlobal('fetch', vi.fn((url: string) => mockFetchResult(url).then((data: unknown) => ({
+            ok: true, status: 200, json: () => Promise.resolve(data),
+        }))));
         mockUseAuth.mockReturnValue({ user: null, createComment, deleteComment });
-        mockGetJson.mockResolvedValue({ data: [comment, anotherComment], pagination });
+        mockFetchResult.mockResolvedValue({ data: [comment, anotherComment], pagination });
         mockSwalFire.mockResolvedValue({ isConfirmed: true });
         createComment.mockResolvedValue({});
         deleteComment.mockResolvedValue(undefined);
@@ -57,7 +60,7 @@ describe('Comments', () => {
         renderComments();
 
         expect(await screen.findByRole('heading', { name: 'Comments (2)' })).toBeInTheDocument();
-        expect(mockGetJson).toHaveBeenCalledWith('http://localhost:8000/api/comments?postId=7&limit=20&offset=0');
+        expect(mockFetchResult).toHaveBeenCalledWith('http://localhost:8000/api/comments?postId=7&limit=20&offset=0');
         expect(screen.getByText('A helpful comment')).toBeInTheDocument();
         expect(screen.getByText('An earlier reply')).toBeInTheDocument();
         expect(screen.getByText('Alex Reader')).toBeInTheDocument();
@@ -71,7 +74,7 @@ describe('Comments', () => {
     });
 
     it('renders comments returned as an array and an empty state', async () => {
-        mockGetJson.mockResolvedValue([]);
+        mockFetchResult.mockResolvedValue([]);
         renderComments();
 
         expect(await screen.findByText('No comments yet.')).toBeInTheDocument();
@@ -80,11 +83,11 @@ describe('Comments', () => {
     });
 
     it('reports API failures with their message or a fallback', async () => {
-        mockGetJson.mockRejectedValueOnce(new Error('Comments unavailable'));
+        mockFetchResult.mockRejectedValueOnce(new Error('Comments unavailable'));
         renderComments();
         await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Comments unavailable'));
 
-        mockGetJson.mockRejectedValueOnce('unexpected');
+        mockFetchResult.mockRejectedValueOnce('unexpected');
         const { unmount } = renderComments();
         await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Could not load comments'));
         unmount();
@@ -99,7 +102,7 @@ describe('Comments', () => {
 
         await waitFor(() => expect(createComment).toHaveBeenCalledWith(7, 'New comment', null));
         await waitFor(() => expect(mockToastSuccess).toHaveBeenCalledWith('Comment added.'));
-        expect(mockGetJson).toHaveBeenCalledTimes(2);
+        expect(mockFetchResult).toHaveBeenCalledTimes(2);
         expect(screen.getByLabelText('Write a comment')).toHaveValue('');
     });
 
@@ -153,7 +156,7 @@ describe('Comments', () => {
         await waitFor(() => expect(adminDelete).toHaveBeenCalledWith(1));
         expect(mockSwalFire).toHaveBeenCalledWith(expect.objectContaining({ title: 'Delete comment?' }));
         expect(mockToastSuccess).toHaveBeenCalledWith('Comment deleted.');
-        expect(mockGetJson).toHaveBeenCalledTimes(2);
+        expect(mockFetchResult).toHaveBeenCalledTimes(2);
     });
 
     it('does not delete if the admin cancels confirmation', async () => {
@@ -166,7 +169,7 @@ describe('Comments', () => {
 
         await waitFor(() => expect(mockSwalFire).toHaveBeenCalled());
         expect(adminDelete).not.toHaveBeenCalled();
-        expect(mockGetJson).toHaveBeenCalledTimes(1);
+        expect(mockFetchResult).toHaveBeenCalledTimes(1);
     });
 
     it('reports errors from deleting comments', async () => {
@@ -185,7 +188,7 @@ describe('Comments', () => {
         await screen.findByText('A helpful comment');
         fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
 
-        await waitFor(() => expect(mockGetJson).toHaveBeenCalledWith(expect.stringContaining('offset=20')));
+        await waitFor(() => expect(mockFetchResult).toHaveBeenCalledWith(expect.stringContaining('offset=20')));
     });
 
     it('scrolls to and highlights a comment targeted by the page hash', async () => {
@@ -202,7 +205,7 @@ describe('Comments', () => {
 
     it('loads additional comment pages while searching for a hash target', async () => {
         const targetComment = { ...comment, id: 21, content: 'Deep link target' };
-        mockGetJson.mockImplementation((url: string) => Promise.resolve(url.includes('offset=0')
+        mockFetchResult.mockImplementation((url: string) => Promise.resolve(url.includes('offset=0')
             ? { data: [comment], pagination }
             : { data: [targetComment], pagination: { ...pagination, currentPage: 2, hasNextPage: false, hasPreviousPage: true } }));
         window.history.replaceState({}, '', '/#comment-21');
@@ -211,7 +214,7 @@ describe('Comments', () => {
         renderComments();
 
         expect(await screen.findByText('Deep link target')).toBeInTheDocument();
-        expect(mockGetJson).toHaveBeenCalledWith(expect.stringContaining('offset=20'));
+        expect(mockFetchResult).toHaveBeenCalledWith(expect.stringContaining('offset=20'));
         window.history.replaceState({}, '', '/');
     });
 });

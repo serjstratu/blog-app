@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_URL } from '../../config';
-import { getJson } from '../../config/getJson';
 import { Loader } from '../../components';
 import type { CreatePostInput, Post } from '../../types';
 import './editPost.css';
@@ -14,34 +14,30 @@ export default function EditPost() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { user, updatePost } = useAuth();
     const routePost = (location.state as { post?: Post } | null)?.post;
-    const [post, setPost] = useState<Post | null>(null);
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const canEdit = user?.roles.some((role) => ['admin', 'editor'].includes(role.toLowerCase())) ?? false;
     const isAdmin = user?.roles.some((role) => role.toLowerCase() === 'admin') ?? false;
 
+    const postQuery = useQuery({
+        queryKey: ['post', id],
+        enabled: Boolean(id && canEdit && !(routePost && String(routePost.id) === id)),
+        queryFn: async () => {
+            const response = await fetch(`${API_URL}/posts/${id}`, { headers: { accept: '*/*' } });
+            if (!response.ok) throw new Error(`Request failed (${response.status})`);
+            return response.json() as Promise<Post>;
+        },
+    });
+    const post = routePost && String(routePost.id) === id ? routePost : postQuery.data ?? null;
+    const loading = Boolean(id && canEdit && !post && postQuery.isPending);
+
     useEffect(() => {
-        if (!id || !canEdit) {
-            setLoading(false);
-            return;
+        if (postQuery.isError) {
+            toast.error(postQuery.error instanceof Error ? postQuery.error.message : 'Could not load post');
         }
-        if (routePost && String(routePost.id) === id) {
-            setPost(routePost);
-            setLoading(false);
-            return;
-        }
-        let active = true;
-        setLoading(true);
-        getJson<Post>(`${API_URL}/posts/${id}`)
-            .then((result) => { if (active) setPost(result); })
-            .catch((error: unknown) => {
-                if (active) toast.error(error instanceof Error ? error.message : 'Could not load post');
-            })
-            .finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
-    }, [id, canEdit, routePost]);
+    }, [postQuery.isError, postQuery.error]);
 
     if (!canEdit) return <Navigate to={user ? `/user/${user.id}` : '/'} replace />;
     if (loading) return <Loader label="Loading post" />;
@@ -66,6 +62,12 @@ export default function EditPost() {
         setSaving(true);
         try {
             const updated = await updatePost(post.id, input);
+            queryClient.setQueryData(['post', String(post.id)], updated);
+            queryClient.setQueryData(['post', updated.slug], updated);
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['posts'] }),
+                queryClient.invalidateQueries({ queryKey: ['dashboard-posts'] }),
+            ]);
             toast.success('Post updated successfully.');
             navigate('/dashboard', { replace: true, state: { updatedPost: updated } });
         } catch (error) {

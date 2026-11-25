@@ -1,17 +1,14 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
 import Blog from './Blog';
+import { renderWithQueryClient } from '../../test/renderWithQueryClient';
 import type { PostsResponse } from '../../types';
 
-const { mockGetJson, mockToastError } = vi.hoisted(() => ({
-    mockGetJson: vi.fn(),
+const { mockFetchResult, mockToastError } = vi.hoisted(() => ({
+    mockFetchResult: vi.fn(),
     mockToastError: vi.fn(),
-}));
-
-vi.mock('../../config/getJson', () => ({
-    getJson: mockGetJson,
 }));
 
 vi.mock('../../config', () => ({
@@ -107,7 +104,7 @@ const mockResponse: PostsResponse = {
 };
 
 const renderBlog = (initialEntry = '/blog') => {
-    return render(
+    return renderWithQueryClient(
         <MemoryRouter initialEntries={[initialEntry]}>
             <Blog />
         </MemoryRouter>,
@@ -117,7 +114,12 @@ const renderBlog = (initialEntry = '/blog') => {
 describe('Blog', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mockGetJson.mockResolvedValue(mockResponse);
+        mockFetchResult.mockResolvedValue(mockResponse);
+        vi.stubGlobal('fetch', vi.fn((url: string) => mockFetchResult(url).then((data: unknown) => ({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve(data),
+        }))));
     });
 
     it('should render the blog page heading', () => {
@@ -132,7 +134,7 @@ describe('Blog', () => {
     });
 
     it('should display loader while posts are loading', () => {
-        mockGetJson.mockReturnValue(new Promise(() => {}));
+        mockFetchResult.mockReturnValue(new Promise(() => {}));
 
         renderBlog();
 
@@ -150,7 +152,7 @@ describe('Blog', () => {
         renderBlog();
 
         await waitFor(() => {
-            expect(mockGetJson).toHaveBeenCalledWith(
+            expect(mockFetchResult).toHaveBeenCalledWith(
                 'http://localhost:8000/api/posts?limit=10&offset=0',
             );
         });
@@ -242,7 +244,7 @@ describe('Blog', () => {
         ).toHaveTextContent('React');
 
         await waitFor(() => {
-            expect(mockGetJson).toHaveBeenCalledWith(
+            expect(mockFetchResult).toHaveBeenCalledWith(
                 'http://localhost:8000/api/posts?limit=10&offset=0&tags=React',
             );
         });
@@ -256,14 +258,14 @@ describe('Blog', () => {
         ).toHaveTextContent('React');
 
         await waitFor(() => {
-            expect(mockGetJson).toHaveBeenCalledWith(
+            expect(mockFetchResult).toHaveBeenCalledWith(
                 'http://localhost:8000/api/posts?limit=10&offset=0&tags=React',
             );
         });
     });
 
     it('should render empty state when no posts are found', async () => {
-        mockGetJson.mockResolvedValue({
+        mockFetchResult.mockResolvedValue({
             data: [],
             pagination: {
                 ...mockPagination,
@@ -281,7 +283,7 @@ describe('Blog', () => {
     });
 
     it('should include tag name in empty state when filtering', async () => {
-        mockGetJson.mockResolvedValue({
+        mockFetchResult.mockResolvedValue({
             data: [],
             pagination: {
                 ...mockPagination,
@@ -297,7 +299,7 @@ describe('Blog', () => {
     });
 
     it('should display error toast when API request fails', async () => {
-        mockGetJson.mockRejectedValue(new Error('Network error'));
+        mockFetchResult.mockRejectedValue(new Error('Network error'));
 
         renderBlog();
 
@@ -309,7 +311,7 @@ describe('Blog', () => {
     });
 
     it('should display fallback error message for unknown errors', async () => {
-        mockGetJson.mockRejectedValue('Unknown error');
+        mockFetchResult.mockRejectedValue('Unknown error');
 
         renderBlog();
 
@@ -333,7 +335,7 @@ describe('Blog', () => {
     });
 
     it('should not render pagination when there is only one page', async () => {
-        mockGetJson.mockResolvedValue({
+        mockFetchResult.mockResolvedValue({
             data: [mockPost],
             pagination: {
                 ...mockPagination,
@@ -358,14 +360,14 @@ describe('Blog', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
         await waitFor(() => {
-            expect(mockGetJson).toHaveBeenLastCalledWith(
+            expect(mockFetchResult).toHaveBeenLastCalledWith(
                 'http://localhost:8000/api/posts?limit=10&offset=10',
             );
         });
     });
 
     it('should not render post image when image is missing', async () => {
-        mockGetJson.mockResolvedValue({
+        mockFetchResult.mockResolvedValue({
             data: [{ ...mockPost, image: '' }],
             pagination: {
                 ...mockPagination,
@@ -383,7 +385,7 @@ describe('Blog', () => {
     });
 
     it('should render post content when excerpt is missing', async () => {
-        mockGetJson.mockResolvedValue({
+        mockFetchResult.mockResolvedValue({
             data: [{ ...mockPost, excerpt: '' }],
             pagination: {
                 ...mockPagination,
@@ -399,7 +401,7 @@ describe('Blog', () => {
     });
 
     it('should not render tags when post has no tags', async () => {
-        mockGetJson.mockResolvedValue({
+        mockFetchResult.mockResolvedValue({
             data: [{ ...mockPost, tags: [] }],
             pagination: {
                 ...mockPagination,
@@ -417,7 +419,7 @@ describe('Blog', () => {
     });
 
     it('should not render featured badge for non-featured posts', async () => {
-        mockGetJson.mockResolvedValue({
+        mockFetchResult.mockResolvedValue({
             data: [{ ...mockPost, isFeatured: false }],
             pagination: {
                 ...mockPagination,

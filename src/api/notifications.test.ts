@@ -7,12 +7,7 @@ import {
     notificationStreamUrl,
 } from './notifications';
 
-import { getJson } from '../config/getJson';
 import { normalizeNotification } from '../utils';
-
-vi.mock('../config/getJson', () => ({
-    getJson: vi.fn(),
-}));
 
 vi.mock('../utils', () => ({
     normalizeNotification: vi.fn(),
@@ -23,7 +18,7 @@ vi.mock('../config', () => ({
     DEFAULT_PAGE_SIZE: 10,
 }));
 
-const mockGetJson = vi.mocked(getJson);
+const mockFetchResult = vi.fn();
 const mockNormalizeNotification = vi.mocked(normalizeNotification);
 
 const mockNotification = {
@@ -43,23 +38,26 @@ describe('notificationsService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.unstubAllGlobals();
+        vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) => mockFetchResult(url, init?.headers).then((data: unknown) => ({
+            ok: true, status: 200, json: () => Promise.resolve(data),
+        }))));
     });
 
     describe('fetchNotifications', () => {
         it('should fetch notifications with custom pagination', async () => {
-            mockGetJson.mockResolvedValue([mockNotification]);
+            mockFetchResult.mockResolvedValue([mockNotification]);
             mockNormalizeNotification.mockReturnValue(normalizedNotification);
 
             await fetchNotifications('test-token', 20, 10);
 
-            expect(mockGetJson).toHaveBeenCalledWith(
+            expect(mockFetchResult).toHaveBeenCalledWith(
                 'http://localhost:8000/api/notifications?limit=20&offset=10',
                 expect.any(Object),
             );
         });
 
         it('should handle paginated API response', async () => {
-            mockGetJson.mockResolvedValue({
+            mockFetchResult.mockResolvedValue({
                 data: [mockNotification],
                 total: 1,
             });
@@ -72,7 +70,7 @@ describe('notificationsService', () => {
         });
 
         it('should filter out notifications that cannot be normalized', async () => {
-            mockGetJson.mockResolvedValue([
+            mockFetchResult.mockResolvedValue([
                 mockNotification,
                 { id: 2 },
                 { id: 3 },
@@ -90,7 +88,7 @@ describe('notificationsService', () => {
         });
 
         it('should return an empty array when API returns no notifications', async () => {
-            mockGetJson.mockResolvedValue([]);
+            mockFetchResult.mockResolvedValue([]);
 
             const result = await fetchNotifications('test-token');
 
@@ -101,7 +99,7 @@ describe('notificationsService', () => {
         it('should propagate API errors', async () => {
             const error = new Error('Network error');
 
-            mockGetJson.mockRejectedValue(error);
+            mockFetchResult.mockRejectedValue(error);
 
             await expect(fetchNotifications('test-token')).rejects.toThrow(
                 'Network error',
@@ -111,7 +109,7 @@ describe('notificationsService', () => {
 
     describe('fetchUnreadCount', () => {
         it('should return count when API returns a number', async () => {
-            mockGetJson.mockResolvedValue(5);
+            mockFetchResult.mockResolvedValue(5);
 
             const result = await fetchUnreadCount('test-token');
 
@@ -119,7 +117,7 @@ describe('notificationsService', () => {
         });
 
         it('should return unreadCount from API response', async () => {
-            mockGetJson.mockResolvedValue({ unreadCount: 7 });
+            mockFetchResult.mockResolvedValue({ unreadCount: 7 });
 
             const result = await fetchUnreadCount('test-token');
 
@@ -127,7 +125,7 @@ describe('notificationsService', () => {
         });
 
         it('should support snake_case unread_count', async () => {
-            mockGetJson.mockResolvedValue({ unread_count: 3 });
+            mockFetchResult.mockResolvedValue({ unread_count: 3 });
 
             const result = await fetchUnreadCount('test-token');
 
@@ -135,7 +133,7 @@ describe('notificationsService', () => {
         });
 
         it('should support count property', async () => {
-            mockGetJson.mockResolvedValue({ count: 4 });
+            mockFetchResult.mockResolvedValue({ count: 4 });
 
             const result = await fetchUnreadCount('test-token');
 
@@ -143,7 +141,7 @@ describe('notificationsService', () => {
         });
 
         it('should return zero when count is missing', async () => {
-            mockGetJson.mockResolvedValue({});
+            mockFetchResult.mockResolvedValue({});
 
             const result = await fetchUnreadCount('test-token');
 
@@ -151,7 +149,7 @@ describe('notificationsService', () => {
         });
 
         it('should return zero when count is not a number', async () => {
-            mockGetJson.mockResolvedValue({ unreadCount: '5' });
+            mockFetchResult.mockResolvedValue({ unreadCount: '5' });
 
             const result = await fetchUnreadCount('test-token');
 
@@ -159,7 +157,7 @@ describe('notificationsService', () => {
         });
 
         it('should prioritize unreadCount over other properties', async () => {
-            mockGetJson.mockResolvedValue({
+            mockFetchResult.mockResolvedValue({
                 unreadCount: 7,
                 unread_count: 3,
                 count: 1,
@@ -171,7 +169,7 @@ describe('notificationsService', () => {
         });
 
         it('should propagate API errors', async () => {
-            mockGetJson.mockRejectedValue(new Error('Request failed'));
+            mockFetchResult.mockRejectedValue(new Error('Request failed'));
 
             await expect(fetchUnreadCount('test-token')).rejects.toThrow(
                 'Request failed',

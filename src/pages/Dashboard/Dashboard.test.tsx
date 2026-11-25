@@ -1,18 +1,18 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Dashboard from './Dashboard';
+import { renderWithQueryClient } from '../../test/renderWithQueryClient';
 
-const { mockUseAuth, mockGetJson, mockFire, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
+const { mockUseAuth, mockFetchResult, mockFire, mockToastError, mockToastSuccess } = vi.hoisted(() => ({
     mockUseAuth: vi.fn(),
-    mockGetJson: vi.fn(),
+    mockFetchResult: vi.fn(),
     mockFire: vi.fn(),
     mockToastError: vi.fn(),
     mockToastSuccess: vi.fn(),
 }));
 
 vi.mock('../../providers/AuthProvider', () => ({ useAuth: mockUseAuth }));
-vi.mock('../../config/getJson', () => ({ getJson: mockGetJson }));
 vi.mock('sweetalert2', () => ({ default: { fire: mockFire } }));
 vi.mock('react-toastify', () => ({ toast: { error: mockToastError, success: mockToastSuccess } }));
 vi.mock('../../components', () => ({
@@ -38,7 +38,7 @@ const comment = {
 };
 
 function renderDashboard() {
-    return render(
+    return renderWithQueryClient(
         <MemoryRouter initialEntries={['/dashboard']}>
             <Routes>
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -52,11 +52,14 @@ function renderDashboard() {
 describe('Dashboard', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) => mockFetchResult(url, init?.headers).then((data: unknown) => ({
+            ok: true, status: 200, json: () => Promise.resolve(data),
+        }))));
         mockUseAuth.mockReturnValue({
             user: { id: 1, roles: ['admin'] }, accessToken: 'token',
             deletePost: vi.fn().mockResolvedValue(undefined), deleteComment: vi.fn().mockResolvedValue(undefined),
         });
-        mockGetJson.mockImplementation((url: string) => Promise.resolve(
+        mockFetchResult.mockImplementation((url: string) => Promise.resolve(
             url.includes('/comments') ? { data: [comment], pagination } : { data: [post], pagination },
         ));
         mockFire.mockResolvedValue({ isConfirmed: true });
@@ -67,7 +70,7 @@ describe('Dashboard', () => {
 
         expect(await screen.findByRole('link', { name: 'Dashboard post' })).toHaveAttribute('href', '/post/dashboard-post');
         expect(screen.getByRole('link', { name: /new post/i })).toHaveAttribute('href', '/add');
-        expect(mockGetJson).toHaveBeenCalledWith(
+        expect(mockFetchResult).toHaveBeenCalledWith(
             expect.stringContaining('include_unpublished=true'),
             expect.objectContaining({ Authorization: 'Bearer token' }),
         );
@@ -98,11 +101,11 @@ describe('Dashboard', () => {
 
         await waitFor(() => expect(deleteComment).toHaveBeenCalledWith(comment.id));
         expect(mockFire).toHaveBeenCalled();
-        expect(mockGetJson).toHaveBeenCalledWith(expect.stringContaining(`/comments?postId=${post.id}&limit=`), expect.anything());
+        expect(mockFetchResult).toHaveBeenCalledWith(expect.stringContaining(`/comments?postId=${post.id}&limit=`), expect.anything());
     });
 
     it('handles the comments endpoint returning an array without pagination', async () => {
-        mockGetJson.mockImplementation((url: string) => Promise.resolve(
+        mockFetchResult.mockImplementation((url: string) => Promise.resolve(
             url.includes('/comments') ? [comment] : { data: [post], pagination },
         ));
         renderDashboard();
@@ -115,14 +118,14 @@ describe('Dashboard', () => {
     });
 
     it('shows an error when loading posts fails', async () => {
-        mockGetJson.mockRejectedValueOnce(new Error('Posts failed'));
+        mockFetchResult.mockRejectedValueOnce(new Error('Posts failed'));
         renderDashboard();
 
         await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Posts failed'));
     });
 
     it('shows a fallback error when loading comments fails', async () => {
-        mockGetJson.mockImplementation((url: string) => url.includes('/comments')
+        mockFetchResult.mockImplementation((url: string) => url.includes('/comments')
             ? Promise.reject('unexpected')
             : Promise.resolve({ data: [post], pagination }));
         renderDashboard();
@@ -189,25 +192,25 @@ describe('Dashboard', () => {
 
     it('ignores a posts response after the dashboard unmounts', async () => {
         let rejectPosts!: (reason: unknown) => void;
-        mockGetJson.mockImplementation(() => new Promise((_resolve, reject) => { rejectPosts = reject; }));
+        mockFetchResult.mockImplementation(() => new Promise((_resolve, reject) => { rejectPosts = reject; }));
         const { unmount } = renderDashboard();
         unmount();
         rejectPosts(new Error('late posts failure'));
-        await waitFor(() => expect(mockGetJson).toHaveBeenCalled());
+        await waitFor(() => expect(mockFetchResult).toHaveBeenCalled());
 
         expect(mockToastError).not.toHaveBeenCalled();
     });
 
     it('ignores a comments response after the dashboard unmounts', async () => {
         let resolveComments!: (response: unknown) => void;
-        mockGetJson.mockImplementation((url: string) => url.includes('/comments')
+        mockFetchResult.mockImplementation((url: string) => url.includes('/comments')
             ? new Promise((resolve) => { resolveComments = resolve; })
             : Promise.resolve({ data: [post], pagination }));
         const { unmount } = renderDashboard();
         fireEvent.click(screen.getByRole('tab', { name: 'Comments' }));
         await screen.findByRole('option', { name: /Dashboard post/ });
         fireEvent.change(screen.getByLabelText('Comments for post'), { target: { value: String(post.id) } });
-        await waitFor(() => expect(mockGetJson).toHaveBeenCalledWith(expect.stringContaining('/comments?'), expect.anything()));
+        await waitFor(() => expect(mockFetchResult).toHaveBeenCalledWith(expect.stringContaining('/comments?'), expect.anything()));
         unmount();
         resolveComments({ data: [comment], pagination });
         await waitFor(() => expect(mockToastError).not.toHaveBeenCalled());
@@ -228,13 +231,13 @@ describe('Dashboard', () => {
 
     it('moves to another posts page from the comments filter', async () => {
         const multiplePages = { ...pagination, totalItems: 21, totalPages: 2, hasNextPage: true };
-        mockGetJson.mockResolvedValue({ data: [post], pagination: multiplePages });
+        mockFetchResult.mockResolvedValue({ data: [post], pagination: multiplePages });
         renderDashboard();
         fireEvent.click(screen.getByRole('tab', { name: 'Comments' }));
         await screen.findByRole('option', { name: /Dashboard post/ });
         fireEvent.click(screen.getByRole('button', { name: 'Next mock page' }));
 
-        await waitFor(() => expect(mockGetJson).toHaveBeenCalledWith(expect.stringContaining('offset=20'), expect.anything()));
+        await waitFor(() => expect(mockFetchResult).toHaveBeenCalledWith(expect.stringContaining('offset=20'), expect.anything()));
         expect(await screen.findByText('Select a post to view its comments.')).toBeInTheDocument();
     });
 
@@ -243,7 +246,7 @@ describe('Dashboard', () => {
         renderDashboard();
 
         expect(await screen.findByText('Home page')).toBeInTheDocument();
-        expect(mockGetJson).not.toHaveBeenCalled();
+        expect(mockFetchResult).not.toHaveBeenCalled();
     });
 
     it('lets editors see only their own posts', async () => {
@@ -255,7 +258,7 @@ describe('Dashboard', () => {
         renderDashboard();
 
         expect(await screen.findByRole('link', { name: 'Dashboard post' })).toBeInTheDocument();
-        expect(mockGetJson).toHaveBeenCalledWith(
+        expect(mockFetchResult).toHaveBeenCalledWith(
             expect.stringContaining('include_unpublished=true&user_id=11'),
             expect.objectContaining({ Authorization: 'Bearer editor-token' }),
         );
