@@ -81,6 +81,34 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
+.dashboard__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+}
+.dashboard__sort svg {
+    color: #94a3b8;
+}
+
+.dashboard__sort:hover,
+.dashboard__sort:focus-visible {
+    color: #4338ca;
+}
+
+.dashboard__sort:focus-visible {
+    outline: 2px solid #818cf8;
+    outline-offset: 4px;
+    border-radius: 2px;
+}
 .dashboard__table td {
     color: #334155;
     font-size: 14px;

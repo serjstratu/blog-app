@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { Post } from '../../../../types';
@@ -14,6 +14,11 @@ const pagination = {
     currentPage: 1, perPage: 20, totalItems: 21, totalPages: 2,
     hasNextPage: true, hasPreviousPage: false,
 };
+const otherPosts = [
+    { ...post, id: 96, title: 'Beta article', slug: 'beta-article', status: 'published', createdAt: '2026-11-25T10:00:00Z', commentsCount: 10 },
+    { ...post, id: 97, title: 'Alpha draft', slug: 'alpha-draft', status: 'draft', createdAt: '2026-11-21T10:00:00Z', commentsCount: 1 },
+    post,
+];
 
 const renderDashPosts = (overrides: Partial<React.ComponentProps<typeof DashPosts>> = {}) => {
     const props: React.ComponentProps<typeof DashPosts> = {
@@ -71,5 +76,48 @@ describe('DashPosts', () => {
         fireEvent.click(screen.getByTestId('pagination-next'));
 
         expect(onPageChange).toHaveBeenCalledWith(2);
+    });
+
+    it('cycles title sorting from ascending to descending and back to the original order', () => {
+        renderDashPosts({ posts: otherPosts });
+        const getTitles = () => screen.getAllByRole('row').slice(1).map((row) => within(row).getByRole('link').textContent);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by post' }));
+        expect(getTitles()).toEqual(['Alpha draft', 'Beta article', 'Dashboard article']);
+        expect(screen.getByRole('columnheader', { name: /Post/ })).toHaveAttribute('aria-sort', 'ascending');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by post, currently asc' }));
+        expect(getTitles()).toEqual(['Dashboard article', 'Beta article', 'Alpha draft']);
+        expect(screen.getByRole('columnheader', { name: /Post/ })).toHaveAttribute('aria-sort', 'descending');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by post, currently desc' }));
+        expect(getTitles()).toEqual(['Beta article', 'Alpha draft', 'Dashboard article']);
+        expect(screen.getByRole('columnheader', { name: /Post/ })).not.toHaveAttribute('aria-sort');
+    });
+
+    it('cycles status, creation date, and comment count through ascending, descending, and unsorted', () => {
+        renderDashPosts({ posts: otherPosts });
+        const getTitles = () => screen.getAllByRole('row').slice(1).map((row) => within(row).getByRole('link').textContent);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by status' }));
+        expect(getTitles()[0]).toBe('Alpha draft');
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by status, currently asc' }));
+        expect(getTitles()[0]).toBe('Beta article');
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by status, currently desc' }));
+        expect(getTitles()).toEqual(['Beta article', 'Alpha draft', 'Dashboard article']);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by created' }));
+        expect(getTitles()).toEqual(['Alpha draft', 'Dashboard article', 'Beta article']);
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by created, currently asc' }));
+        expect(getTitles()).toEqual(['Beta article', 'Dashboard article', 'Alpha draft']);
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by created, currently desc' }));
+        expect(getTitles()).toEqual(['Beta article', 'Alpha draft', 'Dashboard article']);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by comments' }));
+        expect(getTitles()).toEqual(['Alpha draft', 'Dashboard article', 'Beta article']);
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by comments, currently asc' }));
+        expect(getTitles()).toEqual(['Beta article', 'Dashboard article', 'Alpha draft']);
+        fireEvent.click(screen.getByRole('button', { name: 'Sort by comments, currently desc' }));
+        expect(getTitles()).toEqual(['Beta article', 'Alpha draft', 'Dashboard article']);
     });
 });
