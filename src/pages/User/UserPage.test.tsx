@@ -98,6 +98,7 @@ describe('UserPage', () => {
         await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledWith({
             name: 'Alex New Name', bio: user.bio, phone: user.phone,
         }));
+        expect(mockToastSuccess).toHaveBeenCalledWith('Profile updated successfully.');
         expect(screen.queryByTestId('user-profile-form')).not.toBeInTheDocument();
     });
 
@@ -109,6 +110,39 @@ describe('UserPage', () => {
 
         expect(screen.queryByTestId('user-profile-form')).not.toBeInTheDocument();
         expect(mockUpdateUser).not.toHaveBeenCalled();
+    });
+
+    it('opens editing in a focused dialog without inserting the form into the profile layout', async () => {
+        renderUserPage();
+        await screen.findByTestId('user-profile');
+        fireEvent.click(screen.getByTestId('edit-profile-button'));
+
+        expect(screen.getByRole('dialog', { name: 'Edit profile' })).toBeInTheDocument();
+        expect(screen.getByTestId('user-profile-name')).toHaveFocus();
+        expect(document.body).toHaveClass('profile-modal-open');
+    });
+
+    it('closes the edit dialog with Escape and restores focus to the edit button', async () => {
+        renderUserPage();
+        await screen.findByTestId('user-profile');
+        const editButton = screen.getByTestId('edit-profile-button');
+        fireEvent.click(editButton);
+        fireEvent.keyDown(document, { key: 'Escape' });
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(editButton).toHaveFocus();
+        expect(document.body).not.toHaveClass('profile-modal-open');
+    });
+
+    it('does not close when interacting inside the dialog and closes from the backdrop', async () => {
+        renderUserPage();
+        await screen.findByTestId('user-profile');
+        fireEvent.click(screen.getByTestId('edit-profile-button'));
+        fireEvent.mouseDown(screen.getByRole('dialog'));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+        fireEvent.mouseDown(screen.getByTestId('user-profile-modal-backdrop'));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('redirects to home for an invalid profile id', async () => {

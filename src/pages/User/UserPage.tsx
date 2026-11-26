@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toast } from 'react-toastify';
@@ -10,7 +10,7 @@ import {
     faCalendarDays,
     faRotate,
     faPenToSquare,
-    faFloppyDisk,
+    faPlus,
     faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import {UserAvatar, UserProfileForm} from "./components";
@@ -33,6 +33,23 @@ const UserPage = () => {
     const [favoritesPagination, setFavoritesPagination] = useState<PaginationData | null>(null);
     const [favoritesPage, setFavoritesPage] = useState(1);
     const [favoritesLoading, setFavoritesLoading] = useState(false);
+    const editButtonRef = useRef<HTMLButtonElement>(null);
+
+    useLayoutEffect(() => {
+        if (!editing) return;
+        const previouslyFocused = document.activeElement as HTMLElement | null;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setEditing(false);
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        document.body.classList.add('profile-modal-open');
+        document.querySelector<HTMLInputElement>('[data-testid="user-profile-name"]')?.focus();
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.body.classList.remove('profile-modal-open');
+            (previouslyFocused ?? editButtonRef.current)?.focus();
+        };
+    }, [editing]);
 
     useEffect(() => {
         if (!currentUser) {
@@ -98,55 +115,71 @@ const UserPage = () => {
             aria-labelledby="user-profile-title"
             data-testid="user-profile"
         >
-            <UserAvatar
-                name={user.name}
-                avatar={user.avatar}
-                uploadAvatar={uploadAvatar}
-            />
-
-            {user.bio && (
-                <p className="user-profile__bio" data-testid="user-bio">
-                    {user.bio}
-                </p>
-            )}
-
-            {currentUser?.roles.some((role) =>
-                ['admin', 'editor'].includes(role.toLowerCase())
-            ) && (
-                <Link
-                    className="user-profile__action user-profile__action--edit"
-                    to="/add/"
-                    data-testid="create-post-link"
-                >
-                    <FontAwesomeIcon icon={faFloppyDisk} />
-                    Create post
-                </Link>
-            )}
-
-            {isOwnProfile && <button
-                data-testid="edit-profile-button"
-                className={`user-profile__action ${
-                    editing
-                        ? 'user-profile__action--secondary'
-                        : 'user-profile__action--edit'
-                }`}
-                type="button"
-                onClick={() => setEditing((prev) => !prev)}
-            >
-                <FontAwesomeIcon icon={editing ? faXmark : faPenToSquare} />
-                {editing ? 'Cancel editing' : 'Edit profile'}
-            </button>}
+            <header className="user-profile__hero">
+                <UserAvatar
+                    name={user.name}
+                    avatar={user.avatar}
+                    uploadAvatar={uploadAvatar}
+                />
+                <div className="user-profile__identity">
+                    <p className="user-profile__eyebrow">Member profile</p>
+                    <h1 id="user-profile-title">{user.name}</h1>
+                    <p className="user-profile__username">@{user.username}</p>
+                    {user.bio && <p className="user-profile__bio" data-testid="user-bio">{user.bio}</p>}
+                </div>
+                <div className="user-profile__actions">
+                    {currentUser.roles.some((role) => ['admin', 'editor'].includes(role.toLowerCase())) && (
+                        <Link className="user-profile__action user-profile__action--secondary" to="/add/" data-testid="create-post-link">
+                            <FontAwesomeIcon icon={faPlus} /> Create post
+                        </Link>
+                    )}
+                    {isOwnProfile && (
+                        <button
+                            ref={editButtonRef}
+                            data-testid="edit-profile-button"
+                            className="user-profile__action user-profile__action--edit"
+                            type="button"
+                            onClick={(event) => {
+                                event.currentTarget.focus();
+                                setEditing(true);
+                            }}
+                        >
+                            <FontAwesomeIcon icon={faPenToSquare} /> Edit profile
+                        </button>
+                    )}
+                </div>
+            </header>
 
             {isOwnProfile && editing && (
-                <div data-testid="user-profile-form">
-                    <UserProfileForm
-                        user={user}
-                        onSave={async (data) => {
-                            await updateUser(data);
-                            setEditing(false);
-                        }}
-                        onCancel={() => setEditing(false)}
-                    />
+                <div className="user-profile__modal-backdrop" data-testid="user-profile-modal-backdrop" onMouseDown={(event) => {
+                    if (event.target === event.currentTarget) setEditing(false);
+                }}>
+                    <section
+                        className="user-profile__modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="user-profile-modal-title"
+                        data-testid="user-profile-form"
+                    >
+                        <header className="user-profile__modal-header">
+                            <div>
+                                <p className="user-profile__eyebrow">Account settings</p>
+                                <h2 id="user-profile-modal-title">Edit profile</h2>
+                            </div>
+                            <button className="user-profile__modal-close" type="button" aria-label="Close edit profile" onClick={() => setEditing(false)}>
+                                <FontAwesomeIcon icon={faXmark} />
+                            </button>
+                        </header>
+                        <UserProfileForm
+                            user={user}
+                            onSave={async (data) => {
+                                await updateUser(data);
+                                toast.success('Profile updated successfully.');
+                                setEditing(false);
+                            }}
+                            onCancel={() => setEditing(false)}
+                        />
+                    </section>
                 </div>
             )}
 
