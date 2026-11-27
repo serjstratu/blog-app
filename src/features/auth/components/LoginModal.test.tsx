@@ -7,6 +7,11 @@ vi.mock('./LoginForm', () => ({
         <button type="button" onClick={onSuccess}>Mock successful login</button>
     ),
 }));
+vi.mock('./RegisterForm', () => ({
+    default: ({ onSuccess }: { onSuccess: () => void }) => (
+        <button type="button" onClick={onSuccess}>Mock successful registration</button>
+    ),
+}));
 
 describe('LoginModal', () => {
     it('renders the accessible modal and its content', () => {
@@ -43,6 +48,26 @@ describe('LoginModal', () => {
         render(<LoginModal onClose={onClose} />);
 
         fireEvent.click(screen.getByRole('button', { name: 'Mock successful login' }));
+
+        expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it('switches to registration and can switch back to login', () => {
+        render(<LoginModal onClose={vi.fn()} />);
+
+        fireEvent.click(screen.getByTestId('auth-mode-toggle'));
+        expect(screen.getByRole('heading', { name: 'Create your account' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Mock successful registration' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('auth-mode-toggle'));
+        expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    });
+
+    it('closes after a successful registration callback', () => {
+        const onClose = vi.fn();
+        render(<LoginModal onClose={onClose} />);
+        fireEvent.click(screen.getByTestId('auth-mode-toggle'));
+        fireEvent.click(screen.getByRole('button', { name: 'Mock successful registration' }));
 
         expect(onClose).toHaveBeenCalledOnce();
     });

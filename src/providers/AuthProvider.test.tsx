@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthContextType, CreatePostInput, LoginResponse, Post, User } from '../types';
 import { AuthProvider, useAuth } from './AuthProvider';
 
-const { mockLogin, mockLogout, mockRefresh } = vi.hoisted(() => ({
-    mockLogin: vi.fn(), mockLogout: vi.fn(), mockRefresh: vi.fn(),
+const { mockLogin, mockRegister, mockLogout, mockRefresh } = vi.hoisted(() => ({
+    mockLogin: vi.fn(), mockRegister: vi.fn(), mockLogout: vi.fn(), mockRefresh: vi.fn(),
 }));
 vi.mock('../services/authService.ts', () => ({
-    authService: { login: mockLogin, logout: mockLogout, refresh: mockRefresh },
+    authService: { login: mockLogin, register: mockRegister, logout: mockLogout, refresh: mockRefresh },
 }));
 
 const SESSION_KEY = 'blog-app-session';
@@ -66,6 +66,7 @@ describe('AuthProvider', () => {
         vi.clearAllMocks();
         vi.stubGlobal('fetch', mockFetch);
         mockLogin.mockResolvedValue(loginResponse);
+        mockRegister.mockResolvedValue(loginResponse);
         mockLogout.mockResolvedValue(undefined);
         mockRefresh.mockResolvedValue({ access_token: 'refreshed-token', expires_in: 3600 });
         mockFetch.mockResolvedValue(apiResponse({}));
@@ -126,6 +127,19 @@ describe('AuthProvider', () => {
         await expect(auth().login({ login: 'alexj', password: 'wrong' })).rejects.toThrow('Bad credentials');
         expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
         expect(auth().isAuthenticated).toBe(false);
+    });
+
+    it('registers, persists the returned session, and exposes the new user', async () => {
+        mountProvider();
+        const details = { name: 'Alex Johnson', username: 'alexj', email: 'alex@example.com', password: 'password123' };
+
+        await act(async () => { await auth().register(details); });
+
+        expect(mockRegister).toHaveBeenCalledWith(details);
+        expect(auth().user).toEqual(user);
+        expect(auth().accessToken).toBe('access-token');
+        expect(auth().isAuthenticated).toBe(true);
+        expect(JSON.parse(sessionStorage.getItem(SESSION_KEY)!).user).toEqual(user);
     });
 
     it('clears local session on logout even when the backend logout fails', async () => {

@@ -3,14 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import LoginForm from './LoginForm';
 
-const { mockLogin, mockNavigate } = vi.hoisted(() => ({
-    mockLogin: vi.fn(),
+const { mockLogin, mockRegister, mockNavigate } = vi.hoisted(() => ({
+    mockLogin: vi.fn(), mockRegister: vi.fn(),
     mockNavigate: vi.fn(),
 }));
 
 vi.mock('../../../providers/AuthProvider.tsx', () => ({
     useAuth: () => ({
         login: mockLogin,
+        register: mockRegister,
     }),
 }));
 

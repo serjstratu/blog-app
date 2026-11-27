@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import LoginForm from './LoginForm';
+import RegisterForm from './RegisterForm';
 import './loginModal.css';
 
 interface LoginModalProps {
@@ -6,6 +8,7 @@ interface LoginModalProps {
 }
 
 const LoginModal = ({ onClose }: LoginModalProps) => {
+    const [mode, setMode] = useState<'login' | 'register'>('login');
     return (
         <div className="modal-overlay" data-testid="login-modal-overlay" onClick={onClose}>
             <div
@@ -26,10 +29,27 @@ const LoginModal = ({ onClose }: LoginModalProps) => {
                     ×
                 </button>
 
-                <h2 id="login-title" data-testid="login-modal-title">Welcome back</h2>
-                <p data-testid="login-modal-description">Sign in to your account</p>
+                <h2 id="login-title" data-testid="login-modal-title">
+                    {mode === 'login' ? 'Welcome back' : 'Create your account'}
+                </h2>
+                <p data-testid="login-modal-description">
+                    {mode === 'login' ? 'Sign in to your account' : 'Join the community'}
+                </p>
 
-                <LoginForm onSuccess={onClose} />
+                {mode === 'login'
+                    ? <LoginForm onSuccess={onClose} />
+                    : <RegisterForm onSuccess={onClose} />}
+
+                <p className="login-modal__switch">
+                    {mode === 'login' ? 'New here?' : 'Already have an account?'}{' '}
+                    <button
+                        type="button"
+                        onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                        data-testid="auth-mode-toggle"
+                    >
+                        {mode === 'login' ? 'Create an account' : 'Log in'}
+                    </button>
+                </p>
             </div>
         </div>
     );

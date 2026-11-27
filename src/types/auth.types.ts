@@ -17,6 +17,13 @@ export interface LoginRequest {
     password: string;
 }
 
+export interface RegisterRequest {
+    name: string;
+    username: string;
+    email: string;
+    password: string;
+}
+
 export interface LoginResponse {
     access_token: string;
     token_type: string;
@@ -36,6 +43,7 @@ export interface AuthContextType {
     accessToken: string | null;
     isAuthenticated: boolean;
     login: (credentials: LoginRequest) => Promise<User>;
+    register: (details: RegisterRequest) => Promise<User>;
     logout: () => Promise<void>;
     updateUser: (updates: Pick<User, 'name' | 'bio' | 'phone'>) => Promise<void>;
     uploadAvatar: (file: File) => Promise<void>;

@@ -6,7 +6,7 @@ import {
     useState,
     type ReactNode,
 } from 'react';
-import type {AuthContextType, CreatePostInput, LoginRequest, LoginResponse,Comment,User} from "../types";
+import type {AuthContextType, CreatePostInput, LoginRequest, LoginResponse, RegisterRequest,Comment,User} from "../types";
 import {authService} from "../services/authService.ts";
 import { API_URL } from '../config';
 import * as favoritesApi from '../api/favorites';
@@ -75,9 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
     }, [session]);
 
-    const login = async (credentials: LoginRequest): Promise<User> => {
-        const response: LoginResponse = await authService.login(credentials);
-
+    const establishSession = (response: LoginResponse): User => {
         const newSession: AuthSession = {
             access_token: response.access_token,
             expires_at: Date.now() + response.expires_in * 1000,
@@ -89,6 +87,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(newSession);
         return response.user;
     };
+
+    const login = async (credentials: LoginRequest): Promise<User> =>
+        establishSession(await authService.login(credentials));
+
+    const register = async (details: RegisterRequest): Promise<User> =>
+        establishSession(await authService.register(details));
 
     const logout = async () => {
         try {
@@ -275,6 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         accessToken: session?.access_token ?? null,
         isAuthenticated: !!session,
         login,
+        register,
         logout,
         updateUser,
         uploadAvatar,

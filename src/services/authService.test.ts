@@ -76,6 +76,43 @@ describe('authService', () => {
         });
     });
 
+    describe('register', () => {
+        const details = { name: 'Alex Johnson', username: 'alexj', email: 'alex@example.com', password: 'password123' };
+        const responseBody = { access_token: 'access', token_type: 'bearer', expires_in: 3600, user: { id: 11 } };
+
+        it('posts registration details with cookies enabled and returns the session response', async () => {
+            mockFetch.mockResolvedValue(createResponse(responseBody));
+
+            await expect(authService.register(details)).resolves.toEqual(responseBody);
+            expect(mockFetch).toHaveBeenCalledWith(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', accept: '*/*' },
+                credentials: 'include',
+                body: JSON.stringify(details),
+            });
+        });
+
+        it('uses the conflict detail when username or email is already taken', async () => {
+            const conflict = { ...createResponse({ detail: 'Username already exists' }, false), status: 409 } as Response;
+            mockFetch.mockResolvedValue(conflict);
+
+            await expect(authService.register(details)).rejects.toThrow('Username already exists');
+        });
+
+        it('uses a helpful conflict fallback when the response has no detail', async () => {
+            const conflict = { ...createResponse({}, false), status: 409 } as Response;
+            mockFetch.mockResolvedValue(conflict);
+
+            await expect(authService.register(details)).rejects.toThrow('That username or email is already in use');
+        });
+
+        it('reports non-conflict registration failures', async () => {
+            mockFetch.mockResolvedValue(createResponse({}, false));
+
+            await expect(authService.register(details)).rejects.toThrow('Could not create your account');
+        });
+    });
+
     describe('refresh', () => {
         const mockRefreshResponse = {
             access_token: 'new-access-token',
